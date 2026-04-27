@@ -1,0 +1,16 @@
+Quero instalar meu agente autonomo OpenClaw + Telegram numa VPS Ubuntu.
+
+Acessa o repositorio publico https://github.com/denderson2013-bot/agente-openclaw-telegram-setup-alunos-denderson e segue o passo a passo de SETUP-AGENTE.md.
+
+Vou te dar as informacoes conforme voce pedir:
+- IP, usuario e senha da VPS
+- Qual LLM eu quero usar: GLM 4.5 Turbo (mais barato, ~US$80/mes) ou GPT Codex 5.5 (mais caro, ~US$200/mes via ChatGPT Plus + API)
+- API key do LLM escolhido
+- Nome do meu agente (ex: Bia, Paula, Lucas)
+- Meu nome
+- Token do bot Telegram (eu crio no @BotFather quando voce pedir)
+- Meu user_id Telegram (eu pego no @userinfobot quando voce pedir)
+- (Opcional) Chave OpenAI pra transcrever audios via Whisper
+- (Opcional) Chave ElevenLabs pra voz
+
+Faz SSH na VPS por mim, instala o ambiente todo (bootstrap.sh), configura o agente OpenClaw com o LLM escolhido, sobe systemd, e me confirma quando estiver no ar conversando comigo no Telegram.

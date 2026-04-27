@@ -1,0 +1,295 @@
+========================================
+COMO CRIAR UM AGENTE OPENCLAW + TELEGRAM v1
+(Suporta GLM 4.5/5 Turbo OU GPT Codex 5.5)
+========================================
+
+Repositorio:
+https://github.com/denderson2013-bot/agente-openclaw-telegram-setup-alunos-denderson
+
+VERSAO 1 (abril 2026) -- baseline das 2 KVMs do {{DONO}}:
+- Agente principal (Naia) + 12 subagentes
+- Backend LLM intercambiavel: GLM (Z.ai) OU GPT Codex 5.5
+- Telegram + Discord + WhatsApp nativos do OpenClaw
+- Memoria via plugin openclaw-mem0 (pgvector + OpenAI embeddings)
+- Audio bidirecional (Whisper + ElevenLabs)
+- Workspace persistente em /root/.openclaw/workspace
+
+O que voce tem no final:
+- Agente principal (ex: Bia-bot) que conversa via Telegram
+- 12 subagentes (jonathan, paulo, juliana, rafael, {{DONO}} Clone, davi, lucas, felipe, matheus, amanda, carolina, bianca)
+- Memoria pgvector + mem0
+- Gateway OpenClaw rodando 24/7 via systemd
+- Audio bidirecional (Whisper entrada, ElevenLabs saida)
+- Auto-restart, healthcheck via openclaw doctor
+
+
+========================================
+PRE-REQUISITOS
+========================================
+
+- VPS Ubuntu 22.04+ ou macOS 13+
+- 8 GB RAM, 50 GB disco recomendado
+- Backend LLM (uma das duas opcoes):
+  * GLM: API key Z.ai paga
+  * GPT Codex: ChatGPT Plus + acesso liberado a Codex 5.5
+- Conta Telegram (do aluno)
+- (Opcional) OPENAI_API_KEY (audio entrada + image gen + mem0)
+- (Opcional) ELEVENLABS_API_KEY (audio saida)
+- (Opcional) Discord bot token, WhatsApp pareamento
+
+
+========================================
+PASSO 1 -- CRIAR BOT TELEGRAM
+========================================
+
+1. Telegram, busca @BotFather
+2. Manda: /newbot
+3. Nome: ex "Assistente do Jonas"
+4. Username (termina em bot): ex jonas_assistente_bot
+5. Copia o TOKEN retornado
+
+Pegar ID Telegram do dono:
+1. Busca @userinfobot, manda qualquer msg
+2. Copia o ID numerico (ex 1672601444)
+
+
+========================================
+PASSO 2 -- INSTALAR DEPENDENCIAS (1 COMANDO)
+========================================
+
+Linux (root):
+   curl -fsSL https://raw.githubusercontent.com/denderson2013-bot/agente-openclaw-telegram-setup-alunos-denderson/main/bootstrap.sh | bash
+
+Instala: Node 22, Python 3, ffmpeg, OpenClaw CLI 2026.4.24,
+Claude Code CLI 2.1.81 (auth backup), tmux, PostgreSQL 16 + pgvector,
+pnpm, pm2 globalmente.
+
+Tempo: 5-10 min.
+
+
+========================================
+PASSO 3 -- ESCOLHER LLM E AUTENTICAR
+========================================
+
+Opcao A -- GLM 4.5/5 Turbo (Z.ai):
+   1. openclaw configure
+   2. Adicionar provider zai:
+      - baseUrl: https://api.z.ai/api/coding/paas/v4
+      - api: openai-completions
+      - apiKey: <sua key>
+   3. Definir modelo primary: zai/glm-5-turbo
+   4. (Recomendado) Fallbacks: zai/glm-5.1, zai/glm-5
+
+Opcao B -- GPT Codex 5.5 (OAuth):
+   1. openclaw configure
+   2. Adicionar profile openai-codex (mode oauth)
+   3. Faz login no navegador (a CLI gera URL)
+   4. Definir modelo primary: openai-codex/gpt-5.5
+   5. (Recomendado) Fallback: anthropic/claude-opus-4-6
+
+Anthropic (auth secundaria, opcional):
+   claude auth login --claudeai
+   (so se quiser usar claude-opus-4-6 como fallback)
+
+
+========================================
+PASSO 4 -- CONFIGURAR CANAL TELEGRAM
+========================================
+
+Adiciona o canal Telegram via openclaw configure:
+
+   openclaw channels add telegram \
+     --bot-token <TOKEN_DO_BOTFATHER> \
+     --allow-from <SEU_USER_ID_TELEGRAM>
+
+Ou edita /root/.openclaw/openclaw.json manualmente, secao channels.telegram:
+
+   "telegram": {
+     "enabled": true,
+     "dmPolicy": "allowlist",
+     "botToken": "<TOKEN>",
+     "allowFrom": ["<USER_ID>"],
+     "groupPolicy": "allowlist",
+     "streaming": {"mode": "partial"},
+     "actions": {"reactions": true}
+   }
+
+
+========================================
+PASSO 5 -- DEIXAR O CLAUDE CODE FAZER O RESTO
+========================================
+
+Da pra delegar pro Claude Code do seu PC executar tudo via SSH.
+
+No Claude Code do seu PC, cola:
+
+   Quero instalar meu agente autonomo OpenClaw + Telegram numa VPS Ubuntu.
+   Acessa https://github.com/denderson2013-bot/agente-openclaw-telegram-setup-alunos-denderson
+   e segue SETUP-AGENTE.md.
+   Vou te passar IP, senha, qual LLM eu quero (GLM ou GPT), e tokens.
+
+O Claude Code:
+- Faz SSH na VPS
+- Roda bootstrap.sh
+- Pergunta qual LLM (GLM ou GPT)
+- Cria openclaw.json baseado no template do repo
+- Substitui placeholders {{...}}
+- Roda openclaw configure pra adicionar Telegram
+- Sobe systemd openclaw-gateway
+- Valida com openclaw doctor
+
+
+========================================
+PASSO 6 -- TESTAR
+========================================
+
+1. Abra o Telegram, busca @bot_username
+2. Manda /start
+3. Naia responde apresentando-se
+4. Manda audio
+5. Bot baixa, Whisper transcreve PT-BR
+6. Naia processa (delega pra subagente se complexo)
+7. Naia decide responder em texto OU audio
+
+
+========================================
+PASSO 7 -- (OPCIONAL) ATIVAR DISCORD/WHATSAPP
+========================================
+
+Discord:
+   openclaw channels add discord --token <DISCORD_BOT_TOKEN>
+
+WhatsApp (pareamento via Baileys):
+   openclaw channels add whatsapp
+   (gera QR code, voce escaneia com seu Whats)
+
+
+========================================
+ARQUITETURA v1 (RESUMIDA)
+========================================
+
+Telegram <-> [openclaw-gateway systemd 24/7 :18789]
+                          |
+                          v
+                [Backend LLM: GLM | GPT Codex | Claude Opus 4.6]
+                          |
+                          v
+                [Naia (main agent)]
+                          |
+                          v
+       [Subagentes: paulo, juliana, jonathan, rafael, ...]
+                          |
+                          v
+                [openclaw-mem0 -> pgvector]
+                          |
+                          v
+                [/root/.openclaw/workspace]
+
+
+========================================
+COMANDOS DO DIA A DIA
+========================================
+
+Status geral:
+   systemctl status openclaw-gateway
+   openclaw health
+   openclaw doctor
+
+Logs ao vivo:
+   journalctl -u openclaw-gateway -f
+   openclaw logs -f
+
+Restart:
+   systemctl restart openclaw-gateway
+
+Config:
+   openclaw config get gateway.port
+   openclaw config set agents.defaults.model.primary zai/glm-5-turbo
+   openclaw configure          # interativo
+   nano /root/.openclaw/openclaw.json && systemctl restart openclaw-gateway
+
+Adicionar/remover canal:
+   openclaw channels add telegram --bot-token XXX
+   openclaw channels remove discord
+
+Ver agentes:
+   openclaw agents list
+   openclaw agents show paulo
+
+Memoria:
+   openclaw memory search "ultimo lancamento"
+   openclaw memory reindex
+
+
+========================================
+CRONS RECOMENDADOS
+========================================
+
+(Configurados automaticamente pelo SETUP-AGENTE.md ETAPA 8)
+
+*/5 * * * *   openclaw doctor --quiet || systemctl restart openclaw-gateway
+0 */2 * * *   bash /root/.openclaw/workspace/scripts/flush-conversation-to-db.sh
+0 9 * * *     openclaw memory reindex
+30 * * * *    /opt/openclaw-tools/heartbeat.sh
+
+
+========================================
+CUSTOS MENSAIS
+========================================
+
+Setup GLM:
+- VPS 4-8 GB:           R$40-120
+- Z.ai API:             US$50-80
+- OpenAI (Whisper+mem0): US$5-15
+- ElevenLabs:           US$5
+- Telegram + PG:        gratis
+- TOTAL:                R$500-700/mes
+
+Setup GPT Codex:
+- VPS 4-8 GB:           R$40-120
+- ChatGPT Plus + Codex: US$200
+- OpenAI (Whisper+mem0): US$5-15
+- ElevenLabs:           US$5
+- Telegram + PG:        gratis
+- TOTAL:                R$1300-1500/mes
+
+
+========================================
+PROBLEMAS COMUNS
+========================================
+
+"openclaw doctor falha em telegram"
+   Provavel token errado ou bot bloqueado. Confere:
+   openclaw config get channels.telegram.botToken
+   Refaz com /token no @BotFather se precisar.
+
+"systemd nao sobe gateway"
+   journalctl -u openclaw-gateway -n 50
+   Maioria das vezes e config invalido. Restaura backup:
+   cp /root/.openclaw/openclaw.json.last-good /root/.openclaw/openclaw.json
+   systemctl restart openclaw-gateway
+
+"GLM retorna erro 401/403"
+   API key Z.ai expirada ou sem credito. Recarrega no painel.
+
+"GPT Codex pede pra logar de novo"
+   OAuth token expirou. Roda:
+   openclaw configure
+   Refaz o login.
+
+"Subagente nao responde"
+   Verifica que ele esta no allowAgents do main:
+   openclaw config get agents.list[0].subagents.allowAgents
+   Adiciona se faltar.
+
+"VPS reboot e nao volta"
+   systemctl is-enabled openclaw-gateway
+   Tem que dar enabled. Se der disabled:
+   systemctl enable openclaw-gateway
+
+
+========================================
+FIM v1
+========================================
+
+Issues: https://github.com/denderson2013-bot/agente-openclaw-telegram-setup-alunos-denderson/issues

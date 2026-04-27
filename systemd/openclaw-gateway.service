@@ -1,0 +1,27 @@
+[Unit]
+Description=OpenClaw Gateway - {{AGENTE_NAME}}
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/.openclaw
+EnvironmentFile=/root/.openclaw/.env
+ExecStart=/usr/bin/openclaw gateway run --force
+Restart=always
+RestartSec=30
+TimeoutStopSec=15
+
+# Security hardening
+ProtectSystem=full
+ProtectHome=false
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Resource limits (ajusta conforme VPS)
+LimitNOFILE=65536
+MemoryHigh=4G
+MemoryMax=6G
+
+[Install]
+WantedBy=multi-user.target

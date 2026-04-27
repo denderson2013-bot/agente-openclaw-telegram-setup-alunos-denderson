@@ -1,0 +1,46 @@
+# Secrets reais (nunca commitar)
+.env
+.env.local
+.env.production
+*.env.real
+secrets/
+credentials/
+
+# OpenClaw runtime state (so commit do template, nunca do real)
+/.openclaw/
+/openclaw.json
+/openclaw.json.bak*
+/agents/main/sessions/
+/workspace/memory/
+
+# Node
+node_modules/
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+*.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Logs
+*.log
+/var/log/
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Build artifacts
+dist/
+build/
+*.tmp
+.cache/
