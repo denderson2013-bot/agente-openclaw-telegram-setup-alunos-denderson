@@ -54,12 +54,13 @@ OpenClaw suporta varios LLMs simultaneamente. Voce define um **primary** e quant
 
 ### Opcao B: GPT Codex 5.5 (OpenAI Codex CLI) -- recomendado pra producao
 
-**Bom porque:** mais robusto, qualidade top-tier global. Usa sua conta ChatGPT Plus + acesso liberado a Codex.
+**Bom porque:** mais robusto, qualidade top-tier global. Usa a sua assinatura ChatGPT Plus, NAO precisa de API key, NAO precisa habilitar nada extra. O consumo sai da sua quota da assinatura.
 
 **Como contratar:**
-1. Tem que ter ChatGPT Plus (US$20/mes)
-2. Solicitar acesso a Codex API (em [chat.openai.com/codex](https://chat.openai.com/codex))
-3. Quando aprovado, voce loga via OAuth na primeira execucao do `openclaw configure`
+1. Tenha conta ChatGPT Plus ativa (US$20/mes base; pra agente rodando 24/7 em producao costuma compensar um plano maior, ~US$200/mes).
+2. So isso. Quando o Claude Code rodar `openclaw configure` na sua VPS, o CLI vai imprimir uma URL no terminal.
+3. Voce copia essa URL e cola no navegador do seu PC, ja logado na sua conta ChatGPT Plus.
+4. Autoriza o acesso. O CLI captura o token automaticamente e salva. Pronto, conectado.
 
 > **Voce pode comecar com GLM e depois migrar pra GPT** sem reinstalar nada. Veja `docs/MIGRACAO.md`.
 
@@ -88,8 +89,8 @@ Acessa o repositorio publico https://github.com/denderson2013-bot/agente-opencla
 
 Vou te dar as informacoes conforme voce pedir:
 - IP, usuario e senha da VPS
-- Qual LLM eu quero usar: GLM 4.5 Turbo (mais barato, ~US$80/mes) ou GPT Codex 5.5 (mais caro, ~US$200/mes via ChatGPT Plus + API)
-- API key do LLM escolhido
+- Qual LLM eu quero usar: GLM 4.5 Turbo (mais barato, ~US$80/mes via API key Z.ai) ou GPT Codex 5.5 (mais robusto, gasta da minha assinatura ChatGPT Plus, sem API key, login via OAuth no navegador)
+- Se GLM: API key Z.ai. Se GPT Codex: voce me passa uma URL pra eu colar no navegador ja logado no ChatGPT, eu autorizo, e o CLI conecta sozinho
 - Nome do meu agente (ex: Bia, Paula, Lucas)
 - Meu nome
 - Token do bot Telegram (eu crio no @BotFather quando voce pedir)
@@ -106,13 +107,17 @@ Tambem disponivel em [`prompt-instalador.txt`](./prompt-instalador.txt) pra copi
 
 ## Passo 6 -- Responda as perguntas (calmamente, uma por vez)
 
-O agente vai te perguntar:
+O agente vai te perguntar (na ordem exata, uma por vez):
+
+> **Importante:** o agente SEMPRE pergunta qual LLM voce quer (passo 4) ANTES de coletar token do LLM (passo 5). Os caminhos GLM e GPT-Codex sao excludentes -- voce nunca precisa fornecer os dois.
 
 1. **IP da VPS** -> cole o IP que o provedor te deu
 2. **Usuario** -> geralmente `root`
 3. **Senha** -> a senha que o provedor te enviou
 4. **Qual LLM voce quer?** -> responde `glm` ou `gpt-codex`
-5. **API key (se GLM) ou login OAuth (se GPT)** -> cola a key Z.ai OU autoriza no navegador
+5. **Token do LLM (depende da escolha em 4):**
+   - **Se voce respondeu `glm`:** o agente vai te pedir sua API key Z.ai (gera no painel z.ai). Voce cola, ele salva no `.env` da VPS, fim.
+   - **Se voce respondeu `gpt-codex`:** o agente NAO te pede API key. Em vez disso, ele roda `openclaw configure` na sua VPS, captura a URL OAuth que o CLI imprime, te manda essa URL. Voce cola no navegador do seu PC ja logado no ChatGPT Plus, autoriza. O CLI da VPS detecta a autorizacao automaticamente. Nao precisa colar nenhuma chave de volta.
 6. **Nome do agente** -> escolha um nome (ex: `Bia`, `Paula`, `Lucas`, `Marcus`)
 7. **Seu nome** -> seu nome real (vai aparecer nos logs)
 8. **Token do bot Telegram** -> nesse momento o agente pode te guiar:

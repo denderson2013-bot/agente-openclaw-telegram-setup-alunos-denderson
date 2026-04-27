@@ -31,7 +31,7 @@ PRE-REQUISITOS
 - 8 GB RAM, 50 GB disco recomendado
 - Backend LLM (uma das duas opcoes):
   * GLM: API key Z.ai paga
-  * GPT Codex: ChatGPT Plus + acesso liberado a Codex 5.5
+  * GPT Codex: assinatura ChatGPT Plus ativa (sem API key, login OAuth via navegador, gasta da quota da assinatura)
 - Conta Telegram (do aluno)
 - (Opcional) OPENAI_API_KEY (audio entrada + image gen + mem0)
 - (Opcional) ELEVENLABS_API_KEY (audio saida)
@@ -80,12 +80,14 @@ Opcao A -- GLM 4.5/5 Turbo (Z.ai):
    3. Definir modelo primary: zai/glm-5-turbo
    4. (Recomendado) Fallbacks: zai/glm-5.1, zai/glm-5
 
-Opcao B -- GPT Codex 5.5 (OAuth):
+Opcao B -- GPT Codex 5.5 (OAuth via assinatura, SEM API key):
    1. openclaw configure
    2. Adicionar profile openai-codex (mode oauth)
-   3. Faz login no navegador (a CLI gera URL)
-   4. Definir modelo primary: openai-codex/gpt-5.5
-   5. (Recomendado) Fallback: anthropic/claude-opus-4-6
+   3. A CLI imprime uma URL no terminal. Copia essa URL.
+   4. Cola no navegador do seu PC, JA LOGADO na sua conta ChatGPT Plus.
+   5. Autoriza o acesso. O CLI captura o token automaticamente e salva. Toda chamada vai consumir da sua quota da assinatura.
+   6. Definir modelo primary: openai-codex/gpt-5.5
+   7. (Recomendado) Fallback: anthropic/claude-opus-4-6
 
 Anthropic (auth secundaria, opcional):
    claude auth login --claudeai
@@ -247,11 +249,11 @@ Setup GLM:
 
 Setup GPT Codex:
 - VPS 4-8 GB:           R$40-120
-- ChatGPT Plus + Codex: US$200
+- ChatGPT Plus (assinatura, sem API key, OAuth): US$20-200
 - OpenAI (Whisper+mem0): US$5-15
 - ElevenLabs:           US$5
 - Telegram + PG:        gratis
-- TOTAL:                R$1300-1500/mes
+- TOTAL:                R$300-1500/mes (depende do plano ChatGPT Plus que voce escolher)
 
 
 ========================================

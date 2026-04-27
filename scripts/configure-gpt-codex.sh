@@ -2,7 +2,9 @@
 # ============================================
 # Configurador GPT Codex 5.5 (OpenAI Codex via OAuth)
 # ============================================
-# Pre-req: ChatGPT Plus + Codex API liberado.
+# Pre-req: assinatura ChatGPT Plus ATIVA na conta do aluno.
+# IMPORTANTE: NAO existe "API key pra Codex CLI". A auth e via OAuth do
+# navegador, consumindo da quota da propria assinatura ChatGPT Plus.
 # Uso:
 #   bash scripts/configure-gpt-codex.sh
 # ============================================
@@ -12,10 +14,15 @@ set -e
 echo ">> Iniciando OAuth pro openai-codex..."
 echo "(Se ja autenticou antes, pula essa etapa.)"
 echo ""
-echo "Passo 1: roda 'openclaw configure' interativamente"
-echo "Passo 2: escolhe provider 'openai-codex' / mode 'oauth'"
-echo "Passo 3: copia URL impressa, abre no navegador, autoriza"
-echo "Passo 4: cola o codigo de retorno"
+echo "Como funciona o login:"
+echo "  Passo 1: o comando 'openclaw configure' vai abrir interativamente."
+echo "  Passo 2: escolhe provider 'openai-codex' e mode 'oauth'."
+echo "  Passo 3: o CLI vai IMPRIMIR uma URL longa (https://chat.openai.com/auth/codex-cli?state=...)"
+echo "  Passo 4: COPIA essa URL e COLA no navegador do seu PC, ja logado na sua conta ChatGPT Plus."
+echo "  Passo 5: clica em 'Autorizar' na pagina."
+echo "  Passo 6: o CLI detecta a autorizacao sozinho e finaliza (30-60s). Voce nao precisa colar nada de volta aqui."
+echo ""
+echo "NAO procure por 'API key pra Codex'. Nao existe. So OAuth via assinatura."
 echo ""
 read -p "Pressiona ENTER quando estiver pronto pra rodar 'openclaw configure'..."
 

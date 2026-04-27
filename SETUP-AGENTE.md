@@ -39,6 +39,19 @@ which sshpass || (
 2. "Qual o usuario de acesso? (geralmente `root`)" -> `VPS_USER`
 3. "Qual a senha que o provedor te mandou?" -> `VPS_PASS` (NUNCA mostra ela em log)
 
+### REGRA OBRIGATORIA: pergunta LLM ANTES de coletar token do LLM
+
+ANTES de qualquer coisa relacionada a auth do LLM (e antes de rodar o bootstrap final), pergunta:
+
+> "Qual LLM voce quer usar como cerebro do agente: `glm` (Z.ai, mais barato, paga via API key) ou `gpt-codex` (OpenAI, mais robusto, gasta da sua assinatura ChatGPT Plus via OAuth, sem API key)?"
+
+Salva como `LLM_BACKEND`. So depois dessa resposta, segue pra coletar a credencial certa:
+
+- **Se `LLM_BACKEND=glm`:** pede a `ZAI_API_KEY`. Nao mencione OAuth, nao mencione ChatGPT Plus. Salva a key e segue.
+- **Se `LLM_BACKEND=gpt-codex`:** NAO peca API key (nao existe pra Codex CLI). Avisa o aluno: "Vou rodar `openclaw configure` na sua VPS pra gerar a URL OAuth. Quando aparecer, te mando a URL pra voce colar no navegador do seu PC ja logado no ChatGPT Plus." Segue pra etapa de auth OAuth descrita abaixo.
+
+NUNCA pergunte simultaneamente "API key do LLM" sem antes saber qual LLM o aluno escolheu. Caminhos sao mutuamente exclusivos.
+
 ### Helper de SSH
 
 ```bash
@@ -69,16 +82,21 @@ ssh_run "curl -fsSL https://raw.githubusercontent.com/denderson2013-bot/agente-o
 
 ### Auth do LLM remotamente
 
-**Se GLM:** so cola a API key no `.env` (ETAPA 3) e fim. Nao precisa browser.
+**Se GLM:** so cola a API key Z.ai no `.env` (ETAPA 3) e fim. Nao precisa browser.
 
-**Se GPT Codex:**
-1. `ssh_run "openclaw configure"` (modo interativo)
-2. Pergunta `LLM provider` -> `openai-codex`
-3. Mode -> `oauth`
-4. A CLI imprime URL. Captura essa URL e manda pro aluno.
-5. "Abra essa URL no navegador do seu PC, faca login com sua conta ChatGPT Plus, autorize, copie o codigo."
-6. Cola o codigo via `ssh_run "openclaw configure --paste-token CODIGO"`
-7. Valida: `ssh_run "openclaw config get auth.profiles"`
+**Se GPT Codex:** a auth e via OAuth, gasta da assinatura ChatGPT Plus do aluno. NAO existe API key pra Codex CLI. NUNCA peca uma "API key da OpenAI pra Codex" -- isso nao existe. So precisa do navegador do aluno logado em ChatGPT Plus.
+
+Fluxo:
+
+1. Roda `ssh_run "openclaw configure"` (modo interativo, em PTY se possivel: use `ssh -tt`).
+2. Quando o CLI perguntar `LLM provider`, responde `openai-codex`.
+3. Quando perguntar `mode`, responde `oauth`.
+4. A CLI imprime uma URL longa no stdout (algo como `https://chat.openai.com/auth/codex-cli?state=...`). **Captura essa URL exata** e manda pro aluno via chat.
+5. Mensagem pro aluno: "Copie essa URL e cole no navegador do seu PC, ja logado na sua conta ChatGPT Plus. Autorize quando aparecer. Nao precisa colar nada de volta aqui -- o CLI da VPS detecta a autorizacao sozinho."
+6. Aguarde o CLI da VPS finalizar (ele fica aguardando o callback). Em geral leva 30-60s apos o aluno autorizar.
+7. Valida: `ssh_run "openclaw config get auth.profiles"` -> deve aparecer `openai-codex:<email-do-aluno>`.
+
+Se o CLI travar (ex: aluno nao autorizou em 5 min), aborta e refaz. Nunca tente "API key pra Codex" -- nao existe.
 
 ### Continue o setup remoto
 
@@ -242,23 +260,27 @@ chmod 600 /root/.openclaw/.env
 # Vai aparecer dentro do openclaw.json na ETAPA 4
 ```
 
-### Opcao B -- GPT Codex 5.5 (OAuth)
+### Opcao B -- GPT Codex 5.5 (OAuth da assinatura ChatGPT Plus, SEM API key)
+
+A auth do Codex CLI e via OAuth, consome da quota da assinatura ChatGPT Plus do aluno. NAO existe API key pra Codex CLI -- nao perca tempo procurando.
 
 ```bash
 openclaw configure
 # Escolhe profile: openai-codex
 # Mode: oauth
-# Segue prompt do CLI (gera URL pra abrir no navegador)
+# A CLI imprime uma URL longa no terminal (https://chat.openai.com/auth/codex-cli?state=...)
 ```
 
-Quando o CLI imprime URL, captura e manda pro aluno.
+Quando o CLI imprimir a URL, captura ela exata e manda pro aluno com a instrucao:
 
-Aluno autoriza, copia codigo. Roda:
+> "Copia essa URL e cola no navegador do seu PC, ja logado na sua conta ChatGPT Plus. Autoriza quando aparecer. Nao precisa colar nada de volta aqui -- o CLI da VPS detecta a autorizacao automaticamente."
+
+O `openclaw configure` fica esperando o callback. Quando o aluno autoriza, ele finaliza sozinho (30-60s).
+
+Apos sucesso, valida:
 ```bash
-# OpenClaw faz o exchange automaticamente quando o aluno cola o codigo no terminal interativo
-# Apos sucesso, valida:
 openclaw config get auth.profiles
-# Deve mostrar profile "openai-codex:<email>" presente
+# Deve mostrar profile "openai-codex:<email-da-conta-ChatGPT>" presente
 ```
 
 ### (Opcional) Anthropic auth

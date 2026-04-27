@@ -3,7 +3,7 @@
 Suporta dois caminhos de LLM no mesmo agente:
 
 - **GLM 4.5 Turbo (Z.ai)** -- mais barato (~US$80/mes), perfeito pra rodar 24/7
-- **GPT Codex 5.5 (OpenAI Codex CLI)** -- mais robusto (~US$200/mes via ChatGPT Plus + API), recomendado pra producao
+- **GPT Codex 5.5 (OpenAI Codex CLI)** -- mais robusto, gasta da sua assinatura ChatGPT Plus (US$20/mes base, plano que oferece a quota Codex maior costuma ficar em ~US$200/mes). Login via OAuth no navegador, NAO precisa de API key.
 
 ---
 
@@ -61,12 +61,14 @@ Roda como `root`. Instala: Node 22 (via nvm), Python 3, ffmpeg, OpenClaw CLI (`o
 2. Roda `openclaw configure` e adiciona o provider `zai` com baseUrl `https://api.z.ai/api/coding/paas/v4` e api `openai-completions`.
 3. Define o modelo primario `zai/glm-5-turbo` (ou `glm-5.1` pra melhor qualidade).
 
-**Opcao B -- GPT Codex 5.5 via OpenAI Codex CLI (oauth, mais robusto):**
+**Opcao B -- GPT Codex 5.5 via OpenAI Codex CLI (OAuth da assinatura, mais robusto):**
 
-1. Tem que ter ChatGPT Plus + API key liberada pra Codex.
-2. Roda `openclaw configure` e adiciona o profile `openai-codex` com mode `oauth`.
-3. Define o modelo primario `openai-codex/gpt-5.5`.
-4. Como fallback, mantem `anthropic/claude-opus-4-6` (roda via Claude Code CLI ja instalado pelo bootstrap).
+1. Tem que ter conta ChatGPT Plus ativa. NAO precisa de API key, NAO precisa habilitar nada extra.
+2. Roda `openclaw configure` e adiciona o profile `openai-codex` com mode `oauth`. O CLI vai imprimir uma URL no terminal.
+3. Copia essa URL e cola no navegador do seu PC, ja logado na sua conta ChatGPT Plus.
+4. Autoriza o acesso. O CLI captura o token e salva localmente. A partir dai todo uso consome da sua quota da assinatura.
+5. Define o modelo primario `openai-codex/gpt-5.5`.
+6. Como fallback, mantem `anthropic/claude-opus-4-6` (roda via Claude Code CLI ja instalado pelo bootstrap).
 
 ### 3. Iniciar o gateway OpenClaw:
 
@@ -126,7 +128,7 @@ Pronto. O agente responde, delega pros 12 subagentes quando precisa, e mantem me
 - VPS Ubuntu 22.04+ (8 GB RAM, 50 GB disco recomendado, 4 GB minimo) **ou** macOS 13+
 - Conta {{Z_AI_OU_CHATGPT_PLUS}} pra LLM:
   - **Opcao A:** API key Z.ai paga (~US$80/mes uso medio)
-  - **Opcao B:** ChatGPT Plus US$20/mes + API com Codex 5.5 liberado (~US$200/mes uso medio)
+  - **Opcao B:** Assinatura ChatGPT Plus ativa (US$20/mes base; pra rodar agente 24/7 em producao costuma compensar o plano com quota Codex maior, ~US$200/mes). Auth e via OAuth no navegador, sem API key.
 - Conta Telegram (pra @BotFather)
 - (Opcional) OpenAI API key pra audio Whisper + image gen + mem0 embeddings
 - (Opcional) ElevenLabs API key pra TTS voz
@@ -137,7 +139,7 @@ Pronto. O agente responde, delega pros 12 subagentes quando precisa, e mantem me
 | Item | GLM | GPT Codex |
 |---|---|---|
 | VPS 4-8 GB | R$40-120 | R$40-120 |
-| API LLM | US$50-80 (Z.ai) | US$200 (ChatGPT Plus + Codex) |
+| API LLM | US$50-80 (Z.ai) | US$20-200 (assinatura ChatGPT Plus, sem API key) |
 | OpenAI (Whisper + mem0 embeddings) | US$5-15 | US$5-15 |
 | ElevenLabs (audio) | US$5 (basic) | US$5 (basic) |
 | Telegram + PostgreSQL | gratis | gratis |
@@ -147,7 +149,7 @@ Pronto. O agente responde, delega pros 12 subagentes quando precisa, e mantem me
 
 | Aspecto | GLM 4.5/5 Turbo | GPT Codex 5.5 |
 |---|---|---|
-| Auth | api_key direta (Z.ai) | OAuth (ChatGPT account) |
+| Auth | api_key direta (Z.ai) | OAuth via navegador (sem API key, gasta da assinatura ChatGPT Plus) |
 | Provider key em `openclaw.json` | `zai` | `openai-codex` |
 | Modelo primary | `zai/glm-5-turbo` | `openai-codex/gpt-5.5` |
 | Fallback recomendado | `zai/glm-5.1`, `zai/glm-5` | `anthropic/claude-opus-4-6` |
@@ -184,6 +186,6 @@ Resumo dos principais:
 | `{{DOMINIO_PRINCIPAL}}` | Seu dominio raiz | Ex: `meusite.com` |
 | `{{LLM_BACKEND}}` | `glm` ou `gpt-codex` | Voce decide |
 | `{{ZAI_API_KEY}}` | (Se GLM) API key do Z.ai | z.ai painel |
-| `{{OPENAI_CODEX_OAUTH_EMAIL}}` | (Se GPT) email da conta ChatGPT Plus | Sua conta |
+| `{{OPENAI_CODEX_OAUTH_EMAIL}}` | (Se GPT) email da conta ChatGPT Plus que vai autorizar via OAuth | Sua conta ChatGPT |
 | `{{SENHA_PADRAO}}` | Senha admin que voce vai usar (TROCA depois!) | Voce define |
 | `{{GITHUB_USERNAME}}` | Seu username no GitHub | Conta sua |

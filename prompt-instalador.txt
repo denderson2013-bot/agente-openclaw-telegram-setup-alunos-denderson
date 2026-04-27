@@ -2,10 +2,18 @@ Quero instalar meu agente autonomo OpenClaw + Telegram numa VPS Ubuntu.
 
 Acessa o repositorio publico https://github.com/denderson2013-bot/agente-openclaw-telegram-setup-alunos-denderson e segue o passo a passo de SETUP-AGENTE.md.
 
-Vou te dar as informacoes conforme voce pedir:
+REGRA OBRIGATORIA DE FLUXO:
+
+A PRIMEIRA pergunta que voce vai me fazer (depois de IP/usuario/senha da VPS) e:
+"Qual LLM voce quer usar: GLM 4.5 Turbo (mais barato, API key Z.ai) ou GPT Codex 5.5 (assinatura ChatGPT Plus, OAuth no navegador, sem API key)?"
+
+So depois da minha resposta voce decide qual caminho coletar:
+
+- Se eu responder GLM: voce me pede a API key Z.ai e usa ela na configuracao.
+- Se eu responder GPT Codex: voce NAO me pede API key (nao existe API key pra Codex CLI). Em vez disso voce roda 'openclaw configure' na VPS, captura a URL OAuth que o CLI imprimir, me manda essa URL exata e eu colo no navegador do meu PC ja logado no ChatGPT Plus, autorizo, e o CLI da VPS detecta sozinho.
+
+Demais informacoes que vou te dar conforme voce pedir:
 - IP, usuario e senha da VPS
-- Qual LLM eu quero usar: GLM 4.5 Turbo (mais barato, ~US$80/mes) ou GPT Codex 5.5 (mais caro, ~US$200/mes via ChatGPT Plus + API)
-- API key do LLM escolhido
 - Nome do meu agente (ex: Bia, Paula, Lucas)
 - Meu nome
 - Token do bot Telegram (eu crio no @BotFather quando voce pedir)
@@ -13,4 +21,4 @@ Vou te dar as informacoes conforme voce pedir:
 - (Opcional) Chave OpenAI pra transcrever audios via Whisper
 - (Opcional) Chave ElevenLabs pra voz
 
-Faz SSH na VPS por mim, instala o ambiente todo (bootstrap.sh), configura o agente OpenClaw com o LLM escolhido, sobe systemd, e me confirma quando estiver no ar conversando comigo no Telegram.
+Faz SSH na VPS por mim, instala o ambiente todo (bootstrap.sh), configura o agente OpenClaw com o LLM escolhido seguindo a regra acima, sobe systemd, e me confirma quando estiver no ar conversando comigo no Telegram.
