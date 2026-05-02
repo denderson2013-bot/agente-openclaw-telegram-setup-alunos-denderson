@@ -20,7 +20,7 @@ Recomendacoes:
 
 Importante na hora de comprar:
 - Sistema operacional: **Ubuntu 22.04** (ou 24.04)
-- Minimo: **4 GB RAM** (8 GB recomendado se for usar prospect ou rodar 2 agentes na mesma VPS)
+- Minimo: **4 GB RAM** (8 GB recomendado se for rodar 2 agentes na mesma VPS)
 - Disco: **minimo 50 GB**
 - Localizacao: qualquer uma. Brasil (Sao Paulo) reduz latencia, mas EUA/Europa funciona igual.
 

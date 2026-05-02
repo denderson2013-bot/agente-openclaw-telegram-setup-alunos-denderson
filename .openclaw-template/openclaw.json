@@ -357,9 +357,6 @@
       },
       "sag": {
         "apiKey": "{{SAG_API_KEY}}"
-      },
-      "goplaces": {
-        "apiKey": "{{GOOGLE_MAPS_KEY_PLACES_GEOCODING}}"
       }
     }
   },

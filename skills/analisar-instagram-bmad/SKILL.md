@@ -35,14 +35,13 @@ Sempre que o usuario pedir qualquer coisa relacionada a entender, analisar, audi
 ### Etapa 1: Receber input
 Extrair @username da mensagem do usuario. Limpar @ e espacos. Validar formato.
 
-### Etapa 2: Crawl HikerAPI (3 chamadas)
-Coletar dados base do perfil:
-- `user_by_username_v2`: bio, follower_count, full_name, is_verified, external_url, category, public_email
-- `user_medias_chunk_v1`: 12 posts mais recentes com captions, likes, comments, taken_at
-- `user_clips`: 3 reels mais recentes (opcional)
+### Etapa 2: Coleta de dados publicos do perfil
+Coletar dados base disponiveis publicamente no perfil:
+- bio, follower_count, full_name, is_verified, external_url, category, public_email
+- 12 posts mais recentes com captions, likes, comments, taken_at
+- 3 reels mais recentes (opcional)
 
-### Etapa 3: Crawl Tandem (fallback)
-Se HikerAPI falhar (rate limit / bloqueio), acionar fallback Tandem Browser via PinchTab. Capturar dados visiveis (bio, seguidores, ultimos posts).
+A skill nao prescreve uma fonte de coleta especifica. O aluno escolhe a forma de coletar dados publicos do Instagram que respeite os termos da plataforma.
 
 ### Etapa 4: Analise Gemini (3 chamadas em sequencia)
 1. Visao Macro: nicho, ICP, posicionamento, top 3 forcas, top 3 fraquezas
@@ -78,7 +77,7 @@ Excecao: se o usuario pedir explicitamente "foco em vendas" ou "foco em faturame
 Educativo + estrategico + acionavel. Nunca academico. Nunca generico. Sempre com numeros, datas e CTAs concretos.
 
 ### Etapa 10: Custo e precificacao
-- Custo de producao: ~US$0,025 por dossie (3 chamadas HikerAPI a US$0,001 + Gemini ~US$0,02)
+- Custo de producao: baixo, apenas chamadas LLM para analise
 - Pricing pro cliente: R$ 497 (perfis ate 50k seguidores), R$ 997 (50k a 500k), R$ 2.000 (500k+)
 - Margem operacional: > 99%
 
@@ -86,22 +85,24 @@ Educativo + estrategico + acionavel. Nunca academico. Nunca generico. Sempre com
 
 ### Modo direto (Claude Code / OpenClaw)
 
-```bash
-python3 ~/.claude/skills/analisar-instagram-bmad/scripts/analyze.py @username
-```
+A skill descreve a metodologia BMAD aplicada a Instagram. Para executar o fluxo completo, o agente deve:
 
-Output:
+1. Coletar dados publicos do perfil informado
+2. Rodar as 3 chamadas Gemini (visao macro, conteudo, estrategia 30 dias)
+3. Renderizar o HTML com base no `template-dossie.html`
+4. Fazer deploy via `scripts/deploy-dossie.sh`
+
+Output esperado:
 - HTML pronto em `/tmp/dossie-USERNAME/index.html`
 - Deploy automatico (se variaveis de ambiente estiverem setadas)
-- URL final ecoada no stdout
+- URL final no formato `USERNAME.DOMINIO_BASE`
 
 ### Variaveis de ambiente necessarias
 
 O aluno cadastra no `/opt/naia-agent/.env` do agente dele (NAO no codigo da skill). A skill apenas le essas variaveis em runtime:
 
 ```
-# Crawl + IA
-HIKERAPI_KEY=...
+# IA
 GEMINI_API_KEY=...
 
 # Deploy (dominio do ALUNO, nao do Denderson)
@@ -132,13 +133,12 @@ analisar-instagram-bmad/
     02-conteudo.md
     03-estrategia-30-dias.md
   scripts/
-    analyze.py                (pipeline end-to-end)
     deploy-dossie.sh          (deploy GitHub + Vercel + DNS)
 ```
 
 ## Regras importantes
 
-1. Nunca invente dados. Se HikerAPI nao retornar campo X, deixar `null` no HTML.
+1. Nunca invente dados. Se a coleta nao retornar campo X, deixar `null` no HTML.
 2. Sempre confirmar @username antes de gastar API. Se ambiguo, perguntar.
 3. Se perfil for privado, avisar e parar. Nao tentar engenharia social.
 4. Plano de 30 dias sempre tem meta numerica realista (+10% padrao).
