@@ -1,6 +1,6 @@
-Quero instalar meu agente autonomo OpenClaw + Telegram numa VPS Ubuntu.
+Quero instalar o OpenClaw original e oficial do Peter Steinberger (https://github.com/openclaw/openclaw) com Telegram numa VPS Ubuntu. E o codigo oficial, puro, sem fork nem modificacao.
 
-Acessa o repositorio publico https://github.com/denderson2013-bot/agente-openclaw-telegram-setup-alunos-denderson e segue o passo a passo de SETUP-AGENTE.md.
+Pra instalar sem erro, segue o roteiro de instalacao publico em https://github.com/denderson2013-bot/agente-openclaw-telegram-setup-alunos-denderson (arquivo SETUP-AGENTE.md). Esse repo NAO e um fork do OpenClaw: e so o passo a passo que baixa e instala o OpenClaw oficial do Peter via npm.
 
 REGRA OBRIGATORIA DE FLUXO:
 
