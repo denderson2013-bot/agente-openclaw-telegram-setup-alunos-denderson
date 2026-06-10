@@ -15,16 +15,27 @@ if [[ -z "$ZAI_API_KEY" ]]; then
     exit 1
 fi
 
-echo ">> Adicionando provider zai (OpenAI-compativel) + modelos..."
-openclaw config set models.providers.zai "{
-  \"baseUrl\": \"https://api.z.ai/api/coding/paas/v4\",
-  \"apiKey\": \"$ZAI_API_KEY\",
-  \"api\": \"openai-completions\",
-  \"models\": [
-    {\"id\": \"glm-5-turbo\", \"name\": \"GLM-5-Turbo\", \"input\": [\"text\"], \"contextWindow\": 204800, \"maxTokens\": 131072},
-    {\"id\": \"glm-5.1\", \"name\": \"GLM-5.1\", \"input\": [\"text\"], \"contextWindow\": 204800, \"maxTokens\": 131072}
-  ]
-}" --strict-json --merge
+echo ">> Adicionando provider zai (OpenAI-compativel) + modelos via config patch..."
+cat > /tmp/oc-zai.json <<JSON
+{
+  "models": {
+    "providers": {
+      "zai": {
+        "baseUrl": "https://api.z.ai/api/coding/paas/v4",
+        "apiKey": "$ZAI_API_KEY",
+        "api": "openai-completions",
+        "models": [
+          {"id": "glm-5-turbo", "name": "GLM-5-Turbo", "input": ["text"], "contextWindow": 204800, "maxTokens": 131072},
+          {"id": "glm-5.1", "name": "GLM-5.1", "input": ["text"], "contextWindow": 204800, "maxTokens": 131072}
+        ]
+      }
+    }
+  }
+}
+JSON
+openclaw config patch --file /tmp/oc-zai.json
+rm -f /tmp/oc-zai.json
+openclaw config validate || true
 
 echo ">> Definindo zai/glm-5-turbo como primary + fallback glm-5.1..."
 openclaw models set zai/glm-5-turbo

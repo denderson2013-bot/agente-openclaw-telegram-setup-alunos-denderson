@@ -1,6 +1,13 @@
-# SETUP-AGENTE.md v2 -- Instalacao do OpenClaw ORIGINAL puro + Telegram
+# SETUP-AGENTE.md v3 -- Instalacao do OpenClaw ORIGINAL puro + Telegram
 
 > Claude (ou outro agente que esteja executando), esse arquivo e pra VOCE executar.
+>
+> ## PERSISTENCIA (LER PRIMEIRO -- NAO DESISTE NO PRIMEIRO ERRO)
+>
+> Se qualquer comando der erro, NAO pare nem desista: diagnostique com `openclaw config validate`
+> e `openclaw doctor`, corrija e continue. So considere a instalacao concluida quando o agente
+> responder de verdade no Telegram. Persista ate o objetivo. Erro nao e parada -- e o proximo passo
+> do diagnostico. Roteiro testado ao vivo em Ubuntu 25.10 com OpenClaw 2026.6.5 (latest).
 >
 > O objetivo e instalar o **OpenClaw original puro** (https://github.com/openclaw/openclaw) numa VPS Ubuntu,
 > conectado ao Telegram, rodando 24/7 via systemd. Sem customizacao, sem subagentes prontos, sem skills extras.
@@ -123,7 +130,7 @@ Colete, uma pergunta por vez:
 
 | Variavel | Pergunta pro aluno | Exemplo |
 |---|---|---|
-| `AGENTE_NAME` | "Qual nome voce quer dar ao seu agente?" | `Bia` |
+| `AGENTE_NAME` | "Qual nome voce quer dar ao seu agente?" (so cosmetico no systemd na 2026.6.5 -- ver ETAPA 2) | `Bia` |
 | `OWNER_NAME` | "Qual seu nome (vai aparecer como dono do agente)?" | `Joao` |
 | `LLM_BACKEND` | "Qual LLM: `glm` ou `gpt-codex`?" (REGRA DE FLUXO acima) | `glm` |
 | `ZAI_API_KEY` | (so se GLM) "Cola sua API key Z.ai" | `xx.xxx-xxx` |
@@ -163,79 +170,118 @@ openclaw --version   # qualquer versao recente
 
 ---
 
-## ETAPA 2 -- CRIAR A CONFIG BASE (`openclaw.json`)
+## ETAPA 2 -- CRIAR A CONFIG DO TELEGRAM (via `config patch`, NAO na mao)
 
 OpenClaw le a config de `~/.openclaw/openclaw.json` (no Linux como root: `/root/.openclaw/openclaw.json`).
 
-Cria a estrutura e uma config minima do OpenClaw puro com o canal Telegram:
+> **NAO escreva o `openclaw.json` na mao.** Na versao 2026.6.5 o schema mudou e escrever os blocos
+> `agent: {name, model}` e `gateway: {port, bind}` a mao quebra com:
+> `OpenClaw config is invalid: <root>: Invalid input`. O jeito certo e usar `openclaw config patch`,
+> que **valida na escrita** (merge nao destrutivo). O schema do canal `telegram` exige `dmPolicy` e
+> `groupPolicy` (enums).
+
+Garante a pasta e aplica o patch do canal Telegram:
 
 ```bash
 mkdir -p /root/.openclaw
 chmod 700 /root/.openclaw
 
-cat > /root/.openclaw/openclaw.json <<'JSON'
+cat > /tmp/oc-telegram.json <<JSON
 {
-  "agent": {
-    "name": "AGENTE_NAME_PLACEHOLDER",
-    "model": ""
-  },
-  "gateway": {
-    "port": 18789,
-    "bind": "loopback"
-  },
   "channels": {
     "telegram": {
       "enabled": true,
-      "botToken": "TELEGRAM_BOT_TOKEN_PLACEHOLDER",
+      "botToken": "$TELEGRAM_BOT_TOKEN",
       "dmPolicy": "allowlist",
-      "allowFrom": ["TELEGRAM_USER_ID_PLACEHOLDER"],
-      "groupPolicy": "allowlist"
+      "groupPolicy": "allowlist",
+      "allowFrom": ["$TELEGRAM_USER_ID"]
     }
   }
 }
 JSON
-chmod 600 /root/.openclaw/openclaw.json
+
+openclaw config patch --file /tmp/oc-telegram.json
+rm -f /tmp/oc-telegram.json
 ```
 
-Substitui os placeholders pelos valores reais coletados na ETAPA 0:
+> **Enums validos:**
+> - `dmPolicy`  = `pairing` | `allowlist` | `open` | `disabled`
+> - `groupPolicy` = `open` | `disabled` | `allowlist`
+>
+> Usar `allowlist` nos dois + seu `user_id` em `allowFrom` libera voce (o dono) direto, sem pairing.
+> Como o `$TELEGRAM_BOT_TOKEN` e `$TELEGRAM_USER_ID` ja entram expandidos no heredoc (sem aspas no `JSON`),
+> nao precisa de `sed` depois. O arquivo temporario e apagado pra nao deixar o token em `/tmp`.
+
+### Nome do agente (FIX -- VERIFICAR)
+
+> ⚠️ Na 2026.6.5 **NAO existe** `openclaw config set agent.name "..."` -- da `Invalid input` (o objeto
+> `agent` no schema nao tem `properties` simples pra um "name"). Esse passo foi REMOVIDO do roteiro.
+> O agente sobe e responde no Telegram **sem** nome custom (testado ao vivo).
+>
+> Se o aluno quiser nome/persona, o caminho NAO esta confirmado nesta versao. Antes de tentar qualquer
+> coisa, inspecione o schema da VPS pra descobrir o campo real:
+> ```bash
+> openclaw config schema | less        # procure por "agent", "persona", "name", "identity"
+> openclaw configure --help            # pode existir um fluxo de persona/identidade
+> openclaw onboard --help
+> ```
+> So aplique se o schema confirmar o caminho. Se nao confirmar, **deixe sem nome custom** e siga em frente
+> (funciona). NAO invente sintaxe.
+
+Valida a config e faz backup do estado bom:
 
 ```bash
-sed -i "s/AGENTE_NAME_PLACEHOLDER/$AGENTE_NAME/" /root/.openclaw/openclaw.json
-sed -i "s/TELEGRAM_BOT_TOKEN_PLACEHOLDER/$TELEGRAM_BOT_TOKEN/" /root/.openclaw/openclaw.json
-sed -i "s/TELEGRAM_USER_ID_PLACEHOLDER/$TELEGRAM_USER_ID/" /root/.openclaw/openclaw.json
-```
-
-> O campo `agent.model` fica vazio de proposito agora. Voce define na ETAPA 3 conforme o LLM escolhido.
-> `dmPolicy: "allowlist"` + `allowFrom` com o seu user_id ja libera voce direto, sem precisar de pairing.
-
-Faz um backup do estado bom:
-
-```bash
+openclaw config validate              # deve dizer "Config valid"
 cp /root/.openclaw/openclaw.json /root/.openclaw/openclaw.json.last-good
+```
+
+---
+
+## ETAPA 2.5 -- DEFINIR `gateway.mode` (OBRIGATORIO -- sem isso o gateway NEM SOBE)
+
+> **FIX critico:** na 2026.6.5 o `gateway.mode` e OBRIGATORIO. Sem ele o systemd morre na hora com
+> `Gateway start blocked: existing config is missing gateway.mode ... set gateway.mode=local manually`
+> (exit 78 / CONFIG). NAO pule este passo.
+
+```bash
+openclaw config set gateway.mode local
+openclaw config validate              # deve dizer "Config valid"
 ```
 
 ---
 
 ## ETAPA 3 -- AUTENTICAR E DEFINIR O LLM ESCOLHIDO
 
+> Ordem que FUNCIONOU ao vivo: (1) patch do telegram [ETAPA 2] -> (2) `gateway.mode local` [ETAPA 2.5]
+> -> (3) auth do LLM [esta etapa] -> (4) `openclaw models set ...` -> (5) systemd `enable --now` [ETAPA 5]
+> -> (6) validar no Telegram [ETAPA 6].
+
 ### Opcao A -- GLM 4.5/5 Turbo (Z.ai, API key)
 
 GLM e um provider OpenAI-compativel custom. Adiciona o provider e o modelo via `openclaw config set` (merge nao destrutivo), depois define como primary.
 
 ```bash
-# Adiciona o provider zai (OpenAI-compativel) com a key do aluno
-openclaw config set models.providers.zai '{
-  "baseUrl": "https://api.z.ai/api/coding/paas/v4",
-  "apiKey": "ZAI_API_KEY_PLACEHOLDER",
-  "api": "openai-completions",
-  "models": [
-    {"id": "glm-5-turbo", "name": "GLM-5-Turbo", "input": ["text"], "contextWindow": 204800, "maxTokens": 131072},
-    {"id": "glm-5.1", "name": "GLM-5.1", "input": ["text"], "contextWindow": 204800, "maxTokens": 131072}
-  ]
-}' --strict-json --merge
-
-# Substitui a key (sed pra nao vazar em historico de comando)
-sed -i "s/ZAI_API_KEY_PLACEHOLDER/$ZAI_API_KEY/" /root/.openclaw/openclaw.json
+# Adiciona o provider zai (OpenAI-compativel) com a key do aluno.
+# Usa um arquivo temporario com config patch (valida na escrita) -- a key entra expandida no heredoc.
+cat > /tmp/oc-zai.json <<JSON
+{
+  "models": {
+    "providers": {
+      "zai": {
+        "baseUrl": "https://api.z.ai/api/coding/paas/v4",
+        "apiKey": "$ZAI_API_KEY",
+        "api": "openai-completions",
+        "models": [
+          {"id": "glm-5-turbo", "name": "GLM-5-Turbo", "input": ["text"], "contextWindow": 204800, "maxTokens": 131072},
+          {"id": "glm-5.1", "name": "GLM-5.1", "input": ["text"], "contextWindow": 204800, "maxTokens": 131072}
+        ]
+      }
+    }
+  }
+}
+JSON
+openclaw config patch --file /tmp/oc-zai.json
+rm -f /tmp/oc-zai.json
 
 # Define o modelo primary e um fallback
 openclaw models set zai/glm-5-turbo
@@ -244,8 +290,9 @@ openclaw models fallbacks add zai/glm-5.1
 
 Valida:
 ```bash
+openclaw config validate            # "Config valid"
 openclaw models list --provider zai
-openclaw models status --probe   # deve mostrar zai acessivel
+openclaw models status --probe      # deve mostrar zai acessivel
 ```
 
 > **Troubleshooting GLM:** `401/403` = API key Z.ai sem credito ou errada. `provider not found` = o `config set`
@@ -262,18 +309,21 @@ Como a VPS e headless, use o **device-code flow** (imprime URL pra abrir no nave
 openclaw models auth login --provider openai --device-code
 ```
 
-O CLI imprime uma **URL** (e as vezes um codigo). Captura a URL exata e manda pro aluno:
+O CLI imprime uma **URL** (`https://auth.openai.com/codex/device`) **e um Code** (ex: `EDYT-MLUDG`).
+Testado ao vivo: esse fluxo FUNCIONA. Captura a URL e o Code e manda pro aluno:
 
-> "Copia essa URL e cola no navegador do seu PC, ja logado na sua conta ChatGPT Plus. Autoriza quando aparecer.
-> (Se aparecer um codigo junto, digita o codigo na pagina.) Nao precisa colar nada de volta aqui -- o CLI da VPS
-> detecta sozinho."
+> "Abre `https://auth.openai.com/codex/device` no navegador do seu PC, ja logado na sua conta ChatGPT Plus.
+> Digita o codigo **EDYT-MLUDG** (o que aparecer pra voce), autoriza. Nao precisa colar nada de volta aqui --
+> o CLI da VPS detecta sozinho e imprime `OpenAI device code complete`."
 
-> No MODO B (remoto), rode esse comando com `ssh_run_tty` (precisa de terminal) e leia o stdout pra extrair a URL.
+> No MODO B (remoto), rode esse comando com `ssh_run_tty` (precisa de terminal) e leia o stdout pra extrair
+> a URL e o Code.
 
-Aguarde o aluno autorizar (30-60s). Depois define o modelo:
+Aguarde o CLI imprimir `OpenAI device code complete` (30-60s apos o aluno autorizar). Depois define o modelo:
 
 ```bash
 openclaw models set openai/gpt-5.5
+openclaw config validate         # "Config valid"
 openclaw models status --probe   # deve mostrar openai autenticado e acessivel
 ```
 
@@ -297,13 +347,23 @@ chmod 600 /root/.openclaw/.env
 **ElevenLabs (audio de saida):** se o aluno deu `ELEVENLABS_API_KEY`, adiciona em `messages.tts`:
 
 ```bash
-openclaw config set messages.tts '{
-  "auto": "off",
-  "provider": "elevenlabs",
-  "elevenlabs": {"apiKey": "ELEVEN_KEY_PLACEHOLDER", "voiceId": "ELEVEN_VOICE_PLACEHOLDER"}
-}' --strict-json --merge
-sed -i "s/ELEVEN_KEY_PLACEHOLDER/$ELEVENLABS_API_KEY/" /root/.openclaw/openclaw.json
-sed -i "s/ELEVEN_VOICE_PLACEHOLDER/${ELEVENLABS_VOICE_ID:-21m00Tcm4TlvDq8ikWAM}/" /root/.openclaw/openclaw.json
+cat > /tmp/oc-tts.json <<JSON
+{
+  "messages": {
+    "tts": {
+      "auto": "off",
+      "provider": "elevenlabs",
+      "elevenlabs": {
+        "apiKey": "$ELEVENLABS_API_KEY",
+        "voiceId": "${ELEVENLABS_VOICE_ID:-21m00Tcm4TlvDq8ikWAM}"
+      }
+    }
+  }
+}
+JSON
+openclaw config patch --file /tmp/oc-tts.json
+rm -f /tmp/oc-tts.json
+openclaw config validate
 ```
 
 Se o aluno nao quer audio, pula essa etapa inteira.
@@ -318,12 +378,22 @@ Baixa o unit do repo, ajusta o nome e sobe:
 curl -fsSL https://raw.githubusercontent.com/denderson2013-bot/agente-openclaw-telegram-setup-alunos-denderson/main/systemd/openclaw-gateway.service \
   -o /etc/systemd/system/openclaw-gateway.service
 
-# Substitui o nome do agente na descricao
-sed -i "s/AGENTE_NAME_PLACEHOLDER/$AGENTE_NAME/" /etc/systemd/system/openclaw-gateway.service
+# 1) Substitui o nome do agente na descricao (se nao tiver nome, vira "OpenClaw")
+sed -i "s/AGENTE_NAME_PLACEHOLDER/${AGENTE_NAME:-OpenClaw}/" /etc/systemd/system/openclaw-gateway.service
+
+# 2) Aponta o ExecStart pro binario REAL desta VPS (geralmente /usr/local/bin/openclaw)
+OPENCLAW_BIN="$(command -v openclaw || echo /usr/local/bin/openclaw)"
+sed -i "s#__OPENCLAW_BIN__#$OPENCLAW_BIN#" /etc/systemd/system/openclaw-gateway.service
 
 systemctl daemon-reload
 systemctl enable --now openclaw-gateway
 ```
+
+> **FIX:** o unit do repo NAO carrega mais placeholder cru no `ExecStart` -- ele traz `__OPENCLAW_BIN__`,
+> que o `sed` acima troca pelo caminho real de `command -v openclaw`. E o `AGENTE_NAME_PLACEHOLDER` da
+> Description vira o nome do agente (ou "OpenClaw" se o aluno nao deu nome). Se algum placeholder sobrar,
+> o gateway nao sobe -- confere com `grep -E 'PLACEHOLDER|__OPENCLAW_BIN__' /etc/systemd/system/openclaw-gateway.service`
+> (nao pode retornar nada).
 
 > O unit so referencia o `.env` se ele existir. Se voce nao criou `/root/.openclaw/.env` na ETAPA 4,
 > o systemd ignora (a linha usa `EnvironmentFile=-` com o `-` que torna o arquivo opcional).
@@ -336,9 +406,16 @@ openclaw gateway status                    # deve mostrar running
 journalctl -u openclaw-gateway -n 30 --no-pager
 ```
 
-> **Troubleshooting:** se `is-active` der `failed`, quase sempre e `openclaw.json` invalido.
-> Roda `journalctl -u openclaw-gateway -n 50 --no-pager`, conserta o JSON, e
-> `systemctl restart openclaw-gateway`. Se piorar, restaura o backup:
+> **Troubleshooting:** se `is-active` der `failed`, roda `journalctl -u openclaw-gateway -n 50 --no-pager`.
+> Causas reais ja vistas na 2026.6.5:
+> - `Gateway start blocked: ... missing gateway.mode` (exit 78) -> faltou a ETAPA 2.5:
+>   `openclaw config set gateway.mode local && systemctl restart openclaw-gateway`.
+> - `OpenClaw config is invalid: <root>: Invalid input` -> alguem escreveu o JSON na mao. Refaz via
+>   `openclaw config patch` (ETAPA 2) + `openclaw config validate`.
+> - Placeholder sobrando no unit (`__OPENCLAW_BIN__` ou `PLACEHOLDER`) -> refaz os `sed` da ETAPA 5.
+> - Sempre roda `openclaw config validate` e `openclaw doctor` antes de desistir.
+>
+> Se piorar, restaura o backup:
 > `cp /root/.openclaw/openclaw.json.last-good /root/.openclaw/openclaw.json && systemctl restart openclaw-gateway`.
 
 ---
@@ -429,7 +506,11 @@ openclaw doctor
 | Problema | Solucao |
 |---|---|
 | `openclaw onboard` trava/engasga numa VPS headless | E por isso que esse setup NAO usa `onboard` interativo. Use os passos controlados acima (config + `models set` + systemd). |
-| Gateway nao sobe | `journalctl -u openclaw-gateway -n 50 --no-pager`. Quase sempre `openclaw.json` invalido. Restaura `.last-good`. |
+| `OpenClaw config is invalid: <root>: Invalid input` | Schema 2026.6.5 mudou. NAO escreve JSON na mao. Usa `openclaw config patch --file ...` (ETAPA 2) + `openclaw config validate`. |
+| `Gateway start blocked ... missing gateway.mode` (exit 78) | Faltou a ETAPA 2.5: `openclaw config set gateway.mode local`. |
+| `agent.name` da `Invalid input` | Esse campo nao existe na 2026.6.5. Roda sem nome custom. Pra investigar: `openclaw config schema`. (VERIFICAR) |
+| Unit nao sobe e tem `__OPENCLAW_BIN__`/`PLACEHOLDER` | `sed` da ETAPA 5 nao rodou. Refaz a substituicao do binario e do nome. |
+| Gateway nao sobe | `journalctl -u openclaw-gateway -n 50 --no-pager`. Roda `openclaw config validate` + `openclaw doctor`. Restaura `.last-good` se preciso. |
 | Telegram nao recebe msg | `openclaw doctor`. Confere `botToken` e `allowFrom`. |
 | GLM da 401/403 | API key Z.ai sem credito/expirada. |
 | Codex pede login de novo | OAuth expirou. `openclaw models auth login --provider openai --device-code`. |
@@ -438,7 +519,7 @@ openclaw doctor
 
 ---
 
-## FIM DO SETUP v2
+## FIM DO SETUP v3
 
 OpenClaw original puro. Documentacao oficial: https://docs.openclaw.ai
 Issues desse setup: https://github.com/denderson2013-bot/agente-openclaw-telegram-setup-alunos-denderson/issues

@@ -9,7 +9,11 @@ A PRIMEIRA pergunta que voce vai me fazer (depois de IP/usuario/senha da VPS) e:
 So depois da minha resposta voce decide qual caminho coletar:
 
 - Se eu responder GLM: voce me pede a API key Z.ai e usa ela na configuracao.
-- Se eu responder GPT Codex: voce NAO me pede API key (nao existe API key pra Codex CLI). Em vez disso voce roda 'openclaw configure' na VPS, captura a URL OAuth que o CLI imprimir, me manda essa URL exata e eu colo no navegador do meu PC ja logado no ChatGPT Plus, autorizo, e o CLI da VPS detecta sozinho.
+- Se eu responder GPT Codex: voce NAO me pede API key (nao existe API key pra Codex CLI). Em vez disso voce roda 'openclaw models auth login --provider openai --device-code' na VPS, captura a URL (https://auth.openai.com/codex/device) e o Code que o CLI imprimir, me manda os dois, eu abro a URL no navegador do meu PC ja logado no ChatGPT Plus, digito o code, autorizo, e o CLI da VPS detecta sozinho ('OpenAI device code complete').
+
+PERSISTENCIA: se qualquer comando der erro, NAO pare nem desista. Diagnostique com 'openclaw config validate' e 'openclaw doctor', corrija e continue. So considere a instalacao concluida quando o agente responder de verdade no Telegram. Persista ate o objetivo.
+
+DICA (Claude Code): antes de colar este comando, voce pode rodar /goal "deixar meu agente OpenClaw respondendo no Telegram" pra o Claude manter o foco e contornar erros sozinho ate terminar (opcional, recomendado).
 
 Demais informacoes que vou te dar conforme voce pedir:
 - IP, usuario e senha da VPS

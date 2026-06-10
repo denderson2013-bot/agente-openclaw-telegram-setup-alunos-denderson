@@ -26,6 +26,14 @@ read -p "Pressiona ENTER pra iniciar o login..."
 openclaw models auth login --provider openai --device-code || true
 
 echo ""
+echo "(o CLI imprime a URL https://auth.openai.com/codex/device + um Code, ex EDYT-MLUDG;"
+echo " abre a URL no PC logado no ChatGPT Plus, digita o code, autoriza."
+echo " o CLI detecta sozinho e imprime 'OpenAI device code complete'.)"
+echo ""
+echo ">> Garantindo gateway.mode=local (obrigatorio)..."
+openclaw config set gateway.mode local
+openclaw config validate || true
+
 echo ">> Definindo openai/gpt-5.5 como primary..."
 openclaw models set openai/gpt-5.5
 

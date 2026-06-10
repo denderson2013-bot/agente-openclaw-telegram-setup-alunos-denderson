@@ -15,14 +15,27 @@ if [[ -z "$TG_BOT_TOKEN" || -z "$TG_USER_ID" ]]; then
     exit 1
 fi
 
-echo ">> Configurando channels.telegram no openclaw.json..."
-openclaw config set channels.telegram "{
-  \"enabled\": true,
-  \"botToken\": \"$TG_BOT_TOKEN\",
-  \"dmPolicy\": \"allowlist\",
-  \"allowFrom\": [\"$TG_USER_ID\"],
-  \"groupPolicy\": \"allowlist\"
-}" --strict-json --merge
+echo ">> Configurando channels.telegram via config patch (valida na escrita)..."
+# Schema 2026.6.5: NAO escrever JSON na mao. dmPolicy/groupPolicy sao enums obrigatorios.
+cat > /tmp/oc-telegram.json <<JSON
+{
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "botToken": "$TG_BOT_TOKEN",
+      "dmPolicy": "allowlist",
+      "groupPolicy": "allowlist",
+      "allowFrom": ["$TG_USER_ID"]
+    }
+  }
+}
+JSON
+openclaw config patch --file /tmp/oc-telegram.json
+rm -f /tmp/oc-telegram.json
+
+echo ">> Garantindo gateway.mode=local (obrigatorio, senao o gateway nem sobe)..."
+openclaw config set gateway.mode local
+openclaw config validate || true
 
 echo ">> Restart gateway..."
 systemctl restart openclaw-gateway 2>/dev/null || true

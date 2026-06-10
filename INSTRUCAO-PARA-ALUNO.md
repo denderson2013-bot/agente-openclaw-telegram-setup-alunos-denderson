@@ -54,9 +54,9 @@ Anote num lugar seguro. O agente vai te perguntar isso depois.
 
 **Como contratar:**
 1. Tenha conta ChatGPT Plus ativa.
-2. So isso. Quando o Claude Code rodar o login OAuth na sua VPS, o CLI vai imprimir uma URL no terminal.
-3. Voce copia essa URL e cola no navegador do seu PC, ja logado na sua conta ChatGPT Plus.
-4. Autoriza o acesso. O CLI captura o token automaticamente. Pronto, conectado.
+2. So isso. Quando o Claude Code rodar o login OAuth na sua VPS, o CLI vai imprimir uma URL (`https://auth.openai.com/codex/device`) e um codigo curto (ex: `EDYT-MLUDG`).
+3. Voce abre essa URL no navegador do seu PC, ja logado na sua conta ChatGPT Plus, e digita o codigo.
+4. Autoriza o acesso. O CLI captura o token automaticamente (`OpenAI device code complete`). Pronto, conectado.
 
 > Voce pode comecar com GLM e depois migrar pra GPT sem reinstalar nada (so refaz a auth do outro e `openclaw models set`).
 
@@ -120,6 +120,11 @@ O agente vai:
 6. Testar a conexao com o Telegram
 
 Quando ele falar **"agente no ar"**, abra o Telegram e mande `/start` pro seu bot. Ele responde.
+
+> Se aparecer algum erro durante a instalacao, fica tranquilo: o Claude Code foi instruido a NAO desistir
+> no primeiro erro -- ele diagnostica (`openclaw config validate` + `openclaw doctor`), conserta e continua
+> ate o bot responder de verdade no Telegram. Dica: voce pode rodar `/goal "deixar meu agente OpenClaw
+> respondendo no Telegram"` no Claude Code antes de colar o prompt pra ele manter o foco ate o fim.
 
 ---
 

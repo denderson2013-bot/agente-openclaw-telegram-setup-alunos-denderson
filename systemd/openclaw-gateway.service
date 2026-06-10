@@ -8,7 +8,8 @@ Type=simple
 WorkingDirectory=/root/.openclaw
 # .env e opcional: o '-' faz o systemd ignorar se o arquivo nao existir
 EnvironmentFile=-/root/.openclaw/.env
-ExecStart=/usr/local/bin/openclaw gateway run --force
+# __OPENCLAW_BIN__ e trocado pelo `command -v openclaw` no ETAPA 5 (default /usr/local/bin/openclaw)
+ExecStart=__OPENCLAW_BIN__ gateway run --force
 Restart=always
 RestartSec=10
 TimeoutStopSec=15

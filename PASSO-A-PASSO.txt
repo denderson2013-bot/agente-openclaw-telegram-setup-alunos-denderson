@@ -1,6 +1,7 @@
 ========================================
-COMO INSTALAR OpenClaw ORIGINAL PURO + TELEGRAM v2
+COMO INSTALAR OpenClaw ORIGINAL PURO + TELEGRAM v3
 (Suporta GLM 4.5/5 Turbo OU GPT Codex 5.5)
+Validado ao vivo em Ubuntu 25.10 + OpenClaw 2026.6.5
 ========================================
 
 Repositorio:
@@ -58,27 +59,36 @@ Tempo: 5-10 min.
 
 
 ========================================
-PASSO 3 -- CRIAR A CONFIG (openclaw.json)
+PASSO 3 -- CONFIGURAR O TELEGRAM (config patch, NAO na mao)
 ========================================
 
-Cria /root/.openclaw/openclaw.json com o canal Telegram nativo:
+ATENCAO 2026.6.5: NAO escreva o openclaw.json na mao (da
+"OpenClaw config is invalid: <root>: Invalid input"). Usa config patch,
+que valida na escrita. dmPolicy/groupPolicy sao enums obrigatorios.
 
+   cat > /tmp/oc-telegram.json <<JSON
    {
-     "agent": { "name": "Bia", "model": "" },
-     "gateway": { "port": 18789, "bind": "loopback" },
      "channels": {
        "telegram": {
          "enabled": true,
          "botToken": "<TOKEN_DO_BOTFATHER>",
          "dmPolicy": "allowlist",
-         "allowFrom": ["<SEU_USER_ID>"],
-         "groupPolicy": "allowlist"
+         "groupPolicy": "allowlist",
+         "allowFrom": ["<SEU_USER_ID>"]
        }
      }
    }
+   JSON
+   openclaw config patch --file /tmp/oc-telegram.json
+   rm -f /tmp/oc-telegram.json
 
-OBS: OpenClaw NAO tem 'channels add telegram'. O canal vai no openclaw.json.
-Com dmPolicy "allowlist" + seu user_id em allowFrom, voce ja fala com o bot direto.
+   # OBRIGATORIO: sem gateway.mode o gateway NEM SOBE (exit 78)
+   openclaw config set gateway.mode local
+   openclaw config validate            # tem que dizer "Config valid"
+
+Enums: dmPolicy = pairing|allowlist|open|disabled ; groupPolicy = open|disabled|allowlist.
+Com allowlist nos dois + seu user_id em allowFrom voce fala com o bot direto.
+Nome do agente (agent.name) NAO existe na 2026.6.5 -- roda sem nome custom (VERIFICAR via 'openclaw config schema').
 
 
 ========================================
@@ -86,19 +96,25 @@ PASSO 4 -- ESCOLHER LLM E AUTENTICAR
 ========================================
 
 Opcao A -- GLM 4.5/5 Turbo (Z.ai, API key):
-   openclaw config set models.providers.zai '{
+   cat > /tmp/oc-zai.json <<JSON
+   {"models":{"providers":{"zai":{
      "baseUrl":"https://api.z.ai/api/coding/paas/v4",
      "apiKey":"<SUA_KEY>",
      "api":"openai-completions",
      "models":[{"id":"glm-5-turbo","name":"GLM-5-Turbo","input":["text"],"contextWindow":204800,"maxTokens":131072}]
-   }' --strict-json --merge
+   }}}}
+   JSON
+   openclaw config patch --file /tmp/oc-zai.json && rm -f /tmp/oc-zai.json
    openclaw models set zai/glm-5-turbo
 
 Opcao B -- GPT Codex 5.5 (OpenAI, OAuth via assinatura, SEM API key):
    openclaw models auth login --provider openai --device-code
-   (o CLI imprime uma URL; copia, cola no navegador do seu PC
-    JA LOGADO no ChatGPT Plus, autoriza; o CLI detecta sozinho)
+   (o CLI imprime a URL https://auth.openai.com/codex/device + um Code, ex EDYT-MLUDG;
+    abre a URL no PC JA LOGADO no ChatGPT Plus, digita o code, autoriza;
+    o CLI detecta sozinho e imprime "OpenAI device code complete")
    openclaw models set openai/gpt-5.5
+
+   openclaw config validate            # "Config valid" antes de subir o gateway
 
 (Atalhos: scripts/configure-glm.sh e scripts/configure-gpt-codex.sh)
 
@@ -108,6 +124,9 @@ PASSO 5 -- SUBIR O GATEWAY (systemd 24/7)
 ========================================
 
    curl -fsSL https://raw.githubusercontent.com/denderson2013-bot/agente-openclaw-telegram-setup-alunos-denderson/main/systemd/openclaw-gateway.service -o /etc/systemd/system/openclaw-gateway.service
+   # troca o placeholder do binario pelo caminho real e o nome na Description
+   sed -i "s#__OPENCLAW_BIN__#$(command -v openclaw || echo /usr/local/bin/openclaw)#" /etc/systemd/system/openclaw-gateway.service
+   sed -i "s/AGENTE_NAME_PLACEHOLDER/OpenClaw/" /etc/systemd/system/openclaw-gateway.service
    systemctl daemon-reload
    systemctl enable --now openclaw-gateway
    systemctl status openclaw-gateway
@@ -173,9 +192,16 @@ PROBLEMAS COMUNS
 
 "systemd nao sobe gateway"
    journalctl -u openclaw-gateway -n 50 --no-pager
-   Maioria das vezes e openclaw.json invalido. Restaura backup:
+   - "missing gateway.mode" (exit 78) -> openclaw config set gateway.mode local
+   - "Invalid input" -> JSON escrito na mao; refaz via openclaw config patch + openclaw config validate
+   - placeholder __OPENCLAW_BIN__ sobrando no unit -> refaz o sed do PASSO 5
+   Roda sempre: openclaw config validate && openclaw doctor antes de desistir.
+   Restaura backup se preciso:
    cp /root/.openclaw/openclaw.json.last-good /root/.openclaw/openclaw.json
    systemctl restart openclaw-gateway
+
+PERSISTENCIA: erro nao e parada. Diagnostica (config validate + doctor),
+corrige e continua. So termina quando o bot responder de verdade no Telegram.
 
 "GLM retorna 401/403"
    API key Z.ai expirada ou sem credito.
@@ -194,7 +220,7 @@ PROBLEMAS COMUNS
 
 
 ========================================
-FIM v2
+FIM v3
 ========================================
 
 Doc oficial: https://docs.openclaw.ai
