@@ -1,18 +1,18 @@
 #!/bin/bash
 # ============================================
-# BOOTSTRAP DO AGENTE OPENCLAW + TELEGRAM v1
+# BOOTSTRAP -- OpenClaw ORIGINAL puro + Telegram v2
 # ============================================
-# Roda UMA VEZ SO numa VPS Ubuntu 22+ ou no macOS.
-# Linux: roda como root (sudo bash ou ja como root)
-# Mac: roda como usuario normal (sem sudo na chamada)
+# Roda UMA VEZ numa VPS Ubuntu 22+ (ou macOS 13+).
+# Linux: roda como root.  Mac: roda como usuario normal.
 #
-# Instala: Node 22 (via nvm), Python 3, ffmpeg, OpenClaw CLI 2026.4.24,
-#          Claude Code CLI 2.1.81 (auth backup pra fallback Anthropic),
-#          tmux, PostgreSQL 16 + pgvector, pnpm, pm2 globalmente.
+# Instala: Node 22 (via nvm), Python 3, ffmpeg, tmux e o
+#          OpenClaw CLI ORIGINAL (npm install -g openclaw@latest).
+#          https://github.com/openclaw/openclaw
 #
-# v1: baseline das KVMs do {{DONO}}.
+# NAO instala nada customizado: sem subagentes, sem skills, sem banco de memoria.
+# OpenClaw puro. O aluno configura o resto seguindo SETUP-AGENTE.md.
 #
-# Uso:
+# Uso (Ubuntu, root):
 #   curl -fsSL https://raw.githubusercontent.com/denderson2013-bot/agente-openclaw-telegram-setup-alunos-denderson/main/bootstrap.sh | bash
 # ============================================
 
@@ -21,19 +21,19 @@ set -e
 # Detecta SO
 if [[ "$OSTYPE" == "darwin"* ]]; then
   OS="macos"
-elif [[ -f /etc/os-release ]] && grep -q "Ubuntu" /etc/os-release; then
+elif [[ -f /etc/os-release ]] && grep -qiE "ubuntu|debian" /etc/os-release; then
   OS="ubuntu"
 else
-  echo "ERRO: SO nao suportado. Precisa Ubuntu 22+ ou macOS 13+."
+  echo "ERRO: SO nao suportado. Precisa Ubuntu 22+ (ou Debian) ou macOS 13+."
   exit 1
 fi
 
 echo "============================================"
-echo "BOOTSTRAP AGENTE OPENCLAW + TELEGRAM v1 ($OS)"
+echo "BOOTSTRAP OpenClaw PURO + TELEGRAM v2 ($OS)"
 echo "============================================"
 
 # ============================================
-# UBUNTU
+# UBUNTU / DEBIAN
 # ============================================
 if [[ "$OS" == "ubuntu" ]]; then
   if [[ "$EUID" -ne 0 ]]; then
@@ -46,14 +46,10 @@ if [[ "$OS" == "ubuntu" ]]; then
   apt update
   apt install -y curl git tmux build-essential unzip ca-certificates \
                  python3 python3-pip python3-venv \
-                 ffmpeg lsof jq sshpass debian-keyring debian-archive-keyring apt-transport-https \
-                 software-properties-common gnupg
+                 ffmpeg lsof jq sshpass gnupg
 
-  pip3 install --break-system-packages requests psycopg2-binary anthropic openai 2>/dev/null || \
-    pip3 install requests psycopg2-binary anthropic openai
-
-  # Node 22 via nvm
-  if ! command -v node &> /dev/null || [[ "$(node -v)" != v2[2-9]* ]]; then
+  # Node 22 via nvm (OpenClaw exige Node 22.19+; 24 recomendado)
+  if ! command -v node &> /dev/null || [[ "$(node -v 2>/dev/null)" != v2[2-9]* ]]; then
     echo ">> Instalando nvm + Node 22..."
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
     export NVM_DIR="$HOME/.nvm"
@@ -62,49 +58,29 @@ if [[ "$OS" == "ubuntu" ]]; then
     nvm use 22
     nvm alias default 22
 
+    # Symlinks globais pra systemd / cron acharem o node
     ln -sf "$NVM_DIR/versions/node/$(nvm version)/bin/node" /usr/local/bin/node
     ln -sf "$NVM_DIR/versions/node/$(nvm version)/bin/npm" /usr/local/bin/npm
     ln -sf "$NVM_DIR/versions/node/$(nvm version)/bin/npx" /usr/local/bin/npx
   fi
 
-  # PostgreSQL 16 + pgvector
-  if ! command -v psql &> /dev/null; then
-    echo ">> Instalando PostgreSQL 16 + pgvector..."
-    install -d /usr/share/postgresql-common/pgdg
-    curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
-      --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
-    echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" \
-      > /etc/apt/sources.list.d/pgdg.list
-    apt update
-    apt install -y postgresql-16 postgresql-16-pgvector
-    systemctl enable --now postgresql
-  fi
+  # OpenClaw CLI ORIGINAL (ultima versao)
+  echo ">> Instalando OpenClaw CLI original (openclaw@latest)..."
+  npm install -g openclaw@latest
 
-  # OpenClaw CLI (PINADO 2026.4.24)
-  echo ">> Instalando OpenClaw CLI 2026.4.24..."
-  npm install -g openclaw@2026.4.24
-
-  # Claude Code CLI (auth backup pra fallback anthropic/claude-opus-4-6)
-  echo ">> Instalando Claude Code CLI 2.1.81 (auth backup)..."
-  npm install -g @anthropic-ai/claude-code@2.1.81
-
-  # PM2 + pnpm
-  echo ">> Instalando pm2 + pnpm..."
-  npm install -g pm2 pnpm playwright
-
-  # Playwright browsers (necessario pro browser tool do OpenClaw)
-  npx playwright install chromium 2>/dev/null || true
+  # Symlink global do openclaw pra systemd / cron
+  NPM_BIN="$(npm config get prefix)/bin"
+  [ -x "$NPM_BIN/openclaw" ] && ln -sf "$NPM_BIN/openclaw" /usr/local/bin/openclaw
 
   # Baixa SETUP-AGENTE.md pra /root/
   echo ">> Baixando SETUP-AGENTE.md..."
   curl -fsSL https://raw.githubusercontent.com/denderson2013-bot/agente-openclaw-telegram-setup-alunos-denderson/main/SETUP-AGENTE.md \
     -o /root/SETUP-AGENTE.md
   curl -fsSL https://raw.githubusercontent.com/denderson2013-bot/agente-openclaw-telegram-setup-alunos-denderson/main/.env.example \
-    -o /root/.env.example
+    -o /root/.env.example 2>/dev/null || true
 
-  # Cria estrutura base
-  mkdir -p /root/.openclaw/{workspace,cron,delivery-queue,credentials,flows,logs,media,telegram}
-  chmod -R 700 /root/.openclaw
+  mkdir -p /root/.openclaw
+  chmod 700 /root/.openclaw
 
   HOME_DIR="/root"
 fi
@@ -124,10 +100,10 @@ if [[ "$OS" == "macos" ]]; then
   fi
 
   echo ">> Instalando dependencias via Homebrew..."
-  brew install python@3.11 ffmpeg tmux postgresql@16 pgvector jq sshpass 2>/dev/null || \
-    brew install python@3.11 ffmpeg tmux postgresql@16 pgvector jq
+  brew install python@3.11 ffmpeg tmux jq 2>/dev/null || \
+    brew install python@3.11 ffmpeg tmux jq
 
-  if ! command -v node &> /dev/null || [[ "$(node -v)" != v2[2-9]* ]]; then
+  if ! command -v node &> /dev/null || [[ "$(node -v 2>/dev/null)" != v2[2-9]* ]]; then
     echo ">> Instalando nvm + Node 22..."
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
     export NVM_DIR="$HOME/.nvm"
@@ -136,22 +112,16 @@ if [[ "$OS" == "macos" ]]; then
     nvm alias default 22
   fi
 
-  brew services start postgresql@16
+  echo ">> Instalando OpenClaw CLI original..."
+  npm install -g openclaw@latest
 
-  pip3 install --user requests psycopg2-binary anthropic openai
-
-  echo ">> Instalando OpenClaw CLI + Claude Code CLI + pm2 + pnpm..."
-  npm install -g openclaw@2026.4.24 @anthropic-ai/claude-code@2.1.81 pm2 pnpm playwright
-
-  npx playwright install chromium 2>/dev/null || true
-
-  mkdir -p $HOME/.openclaw/{workspace,cron,delivery-queue,credentials,flows,logs,media,telegram}
-  chmod -R 700 $HOME/.openclaw
+  mkdir -p $HOME/.openclaw
+  chmod 700 $HOME/.openclaw
 
   curl -fsSL https://raw.githubusercontent.com/denderson2013-bot/agente-openclaw-telegram-setup-alunos-denderson/main/SETUP-AGENTE.md \
     -o $HOME/SETUP-AGENTE.md
   curl -fsSL https://raw.githubusercontent.com/denderson2013-bot/agente-openclaw-telegram-setup-alunos-denderson/main/.env.example \
-    -o $HOME/.env.example
+    -o $HOME/.env.example 2>/dev/null || true
 
   HOME_DIR="$HOME"
 fi
@@ -161,37 +131,25 @@ fi
 # ============================================
 echo ""
 echo "============================================"
-echo "OK! Pre-requisitos instalados (v1)."
+echo "OK! OpenClaw puro instalado."
 echo "============================================"
 echo ""
-echo "VERSOES INSTALADAS:"
-node --version 2>/dev/null   | xargs echo "  Node:"
+echo "VERSOES:"
+node --version 2>/dev/null    | xargs echo "  Node:"
 python3 --version 2>/dev/null | xargs echo "  Python:"
 ffmpeg -version 2>/dev/null | head -1 | xargs echo "  ffmpeg:"
 openclaw --version 2>/dev/null | head -1 | xargs echo "  OpenClaw:"
-claude --version 2>/dev/null | xargs echo "  Claude Code:"
-psql --version 2>/dev/null | head -1 | xargs echo "  PostgreSQL:"
-pm2 --version 2>/dev/null | xargs echo "  pm2:"
-pnpm --version 2>/dev/null | xargs echo "  pnpm:"
 echo ""
 echo "============================================"
-echo "PROXIMOS PASSOS:"
+echo "PROXIMOS PASSOS (ver SETUP-AGENTE.md):"
 echo "============================================"
+echo "1. Criar /root/.openclaw/openclaw.json com o canal Telegram (ETAPA 2)"
+echo "2. Autenticar o LLM escolhido (ETAPA 3):"
+echo "   - GLM (Z.ai): cola a API key e 'openclaw models set zai/glm-5-turbo'"
+echo "   - GPT Codex 5.5: 'openclaw models auth login --provider openai --device-code'"
+echo "     (OAuth no navegador, sem API key, gasta da assinatura ChatGPT Plus)"
+echo "3. Subir o systemd 'openclaw-gateway' (ETAPA 5)"
+echo "4. Mandar /start no bot do Telegram (ETAPA 6)"
 echo ""
-echo "1. Escolher backend de LLM:"
-echo "   - GLM (Z.ai, mais barato): so cola sua API key na ETAPA 4 do SETUP"
-echo "   - GPT Codex 5.5 (OpenAI, mais robusto): roda 'openclaw configure'"
-echo "     e segue OAuth. Precisa ChatGPT Plus + Codex liberado."
-echo ""
-echo "2. (Opcional) Logar na conta Claude pra usar fallback Anthropic:"
-echo "   claude auth login --claudeai"
-echo ""
-echo "3. Iniciar o Claude Code (ou outro agente) e seguir SETUP-AGENTE.md:"
-echo "   cd $HOME_DIR && claude --dangerously-skip-permissions"
-echo ""
-echo "4. Dentro do Claude, cola essa mensagem:"
-echo ""
-echo "   Leia o arquivo SETUP-AGENTE.md e execute todos os passos."
-echo "   Vou te dizer qual LLM escolher (GLM ou GPT Codex) e te dar os tokens."
-echo ""
+echo "Doc oficial do OpenClaw: https://docs.openclaw.ai"
 echo "============================================"

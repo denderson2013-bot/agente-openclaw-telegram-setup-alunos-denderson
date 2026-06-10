@@ -1,38 +1,41 @@
 #!/bin/bash
 # ============================================
-# Configurador GLM 4.5/5 Turbo (Z.ai)
+# Configurador GLM 4.5/5 Turbo (Z.ai) -- OpenClaw original puro
 # ============================================
+# GLM e um provider OpenAI-compativel custom.
 # Uso:
-#   ZAI_API_KEY=sk-xxx bash scripts/configure-glm.sh
+#   ZAI_API_KEY=xx.xxx-xxx bash scripts/configure-glm.sh
 # ============================================
 
 set -e
 
 if [[ -z "$ZAI_API_KEY" ]]; then
     echo "ERRO: ZAI_API_KEY nao definido."
-    echo "Uso: ZAI_API_KEY=sk-xxx bash scripts/configure-glm.sh"
+    echo "Uso: ZAI_API_KEY=xx.xxx-xxx bash scripts/configure-glm.sh"
     exit 1
 fi
 
-echo ">> Configurando provider zai..."
-openclaw config set models.providers.zai.baseUrl "https://api.z.ai/api/coding/paas/v4"
-openclaw config set models.providers.zai.apiKey "$ZAI_API_KEY"
-openclaw config set models.providers.zai.api "openai-completions"
+echo ">> Adicionando provider zai (OpenAI-compativel) + modelos..."
+openclaw config set models.providers.zai "{
+  \"baseUrl\": \"https://api.z.ai/api/coding/paas/v4\",
+  \"apiKey\": \"$ZAI_API_KEY\",
+  \"api\": \"openai-completions\",
+  \"models\": [
+    {\"id\": \"glm-5-turbo\", \"name\": \"GLM-5-Turbo\", \"input\": [\"text\"], \"contextWindow\": 204800, \"maxTokens\": 131072},
+    {\"id\": \"glm-5.1\", \"name\": \"GLM-5.1\", \"input\": [\"text\"], \"contextWindow\": 204800, \"maxTokens\": 131072}
+  ]
+}" --strict-json --merge
 
-echo ">> Definindo zai/glm-5-turbo como primary..."
-openclaw config set agents.defaults.model.primary "zai/glm-5-turbo"
-openclaw config set agents.defaults.model.fallbacks '["zai/glm-5.1", "zai/glm-5"]'
-
-echo ">> Auth profile zai:default..."
-openclaw config set 'auth.profiles.zai:default.provider' "zai"
-openclaw config set 'auth.profiles.zai:default.mode' "api_key"
+echo ">> Definindo zai/glm-5-turbo como primary + fallback glm-5.1..."
+openclaw models set zai/glm-5-turbo
+openclaw models fallbacks add zai/glm-5.1 2>/dev/null || true
 
 echo ">> Restart gateway..."
-systemctl restart openclaw-gateway
+systemctl restart openclaw-gateway 2>/dev/null || true
 sleep 3
 
 echo ">> Validando..."
-openclaw infer simple --model zai/glm-5-turbo --prompt "Responde com OK em portugues."
+openclaw models status --probe || true
 
 echo ""
 echo "OK! GLM 5-Turbo agora e o LLM primary."

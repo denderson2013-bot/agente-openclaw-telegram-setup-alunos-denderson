@@ -4,8 +4,7 @@ Acessa o repositorio publico https://github.com/denderson2013-bot/agente-opencla
 
 REGRA OBRIGATORIA DE FLUXO:
 
-A PRIMEIRA pergunta que voce vai me fazer (depois de IP/usuario/senha da VPS) e:
-"Qual LLM voce quer usar: GLM 4.5 Turbo (mais barato, API key Z.ai) ou GPT Codex 5.5 (assinatura ChatGPT Plus, OAuth no navegador, sem API key)?"
+A PRIMEIRA pergunta que voce vai me fazer (depois de IP/usuario/senha da VPS) e: "Qual LLM voce quer usar: GLM 4.5 Turbo (mais barato, API key Z.ai) ou GPT Codex 5.5 (assinatura ChatGPT Plus, OAuth no navegador, sem API key)?"
 
 So depois da minha resposta voce decide qual caminho coletar:
 

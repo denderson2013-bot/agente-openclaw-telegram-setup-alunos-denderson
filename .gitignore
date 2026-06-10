@@ -6,12 +6,11 @@
 secrets/
 credentials/
 
-# OpenClaw runtime state (so commit do template, nunca do real)
+# OpenClaw runtime state (nunca commitar config real com secrets)
 /.openclaw/
 /openclaw.json
 /openclaw.json.bak*
-/agents/main/sessions/
-/workspace/memory/
+/openclaw.json.last-good
 
 # Node
 node_modules/
