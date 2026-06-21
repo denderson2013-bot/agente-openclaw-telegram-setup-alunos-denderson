@@ -6,7 +6,7 @@
 # Linux: roda como root.  Mac: roda como usuario normal.
 #
 # Instala: Node 22 (via nvm), Python 3, ffmpeg, tmux e o
-#          OpenClaw CLI ORIGINAL (npm install -g openclaw@latest).
+#          OpenClaw CLI ORIGINAL (npm install -g openclaw@2026.6.5).
 #          https://github.com/openclaw/openclaw
 #
 # NAO instala nada customizado: sem subagentes, sem skills, sem banco de memoria.
@@ -65,8 +65,8 @@ if [[ "$OS" == "ubuntu" ]]; then
   fi
 
   # OpenClaw CLI ORIGINAL (ultima versao)
-  echo ">> Instalando OpenClaw CLI original (openclaw@latest)..."
-  npm install -g openclaw@latest
+  echo ">> Instalando OpenClaw CLI original (openclaw@2026.6.5)..."
+  npm install -g openclaw@2026.6.5
 
   # Symlink global do openclaw pra systemd / cron
   NPM_BIN="$(npm config get prefix)/bin"
@@ -113,7 +113,7 @@ if [[ "$OS" == "macos" ]]; then
   fi
 
   echo ">> Instalando OpenClaw CLI original..."
-  npm install -g openclaw@latest
+  npm install -g openclaw@2026.6.5
 
   mkdir -p $HOME/.openclaw
   chmod 700 $HOME/.openclaw
