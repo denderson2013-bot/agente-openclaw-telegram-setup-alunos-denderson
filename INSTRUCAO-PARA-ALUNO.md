@@ -1,11 +1,11 @@
-# Como instalar seu agente OpenClaw + Telegram em 5 minutos (sem mexer em terminal)
+# Como instalar seu agente Avalanche (OpenClaw 2026.6.5) + Telegram (sem mexer em terminal)
 
 > Caminho recomendado pra alunos que NAO querem copiar comandos manualmente na VPS.
-> Voce abre o Claude Code (ou outro agente que faca SSH) no seu PC, cola UM prompt, responde algumas perguntas, e o agente faz o resto: SSH na VPS, instalacao do OpenClaw ORIGINAL puro, escolha do LLM (GLM ou GPT Codex), configuracao do Telegram, gateway 24/7.
+> Voce abre o Claude Code (ou outro agente que faca SSH) no seu PC, cola UM prompt, responde algumas perguntas, e o agente faz o resto: SSH na VPS, instalacao do OpenClaw 2026.6.5 + a alma Avalanche + 12 subagentes + 4 skills, escolha do LLM (GLM ou GPT Codex), configuracao do Telegram, gateway 24/7.
 >
-> O agente final e o **OpenClaw puro** (https://github.com/openclaw/openclaw), generico, com o nome que voce escolher (ex: Bia, Paula, Lucas). Sem nada pre-configurado por cima.
+> O agente final e o **agente Avalanche completo** sobre OpenClaw 2026.6.5 (https://github.com/openclaw/openclaw): a mesma alma e a mesma equipe de subagentes/skills da operacao do Denderson, com o nome que voce escolher pro principal (ex: Bia, Paula, Lucas) e o seu nome como dono.
 >
-> Se voce e desenvolvedor e prefere fazer manualmente, veja o `README.md` (caminho avancado).
+> Se voce e desenvolvedor e prefere fazer manualmente, veja o `README.md` (caminho avancado) + `SETUP-AGENTE.md`.
 
 ---
 
@@ -113,18 +113,18 @@ Calma. Uma resposta por vez.
 O agente vai:
 
 1. Fazer SSH na sua VPS automaticamente
-2. Rodar o `bootstrap.sh` (Node, Python, ffmpeg, **OpenClaw original**) -- ~5-10 min
-3. Criar o `openclaw.json` com o canal Telegram e o nome do seu agente
-4. Autenticar o LLM escolhido (GLM via API key ou GPT Codex via OAuth)
-5. Subir o systemd `openclaw-gateway` (roda 24/7)
-6. Testar a conexao com o Telegram
+2. Rodar o `bootstrap.sh` (Node, Python, ffmpeg, **OpenClaw 2026.6.5** + arquivos Avalanche) -- ~5-10 min
+3. Configurar o canal Telegram e o nome do seu agente (via `openclaw config patch` + `agents set-identity`)
+4. Instalar a alma + 4 skills e registrar os 12 subagentes
+5. Autenticar o LLM escolhido (GLM via API key ou GPT Codex via OAuth)
+6. Subir o systemd `openclaw-gateway` (roda 24/7)
+7. Testar a conexao com o Telegram
 
 Quando ele falar **"agente no ar"**, abra o Telegram e mande `/start` pro seu bot. Ele responde.
 
 > Se aparecer algum erro durante a instalacao, fica tranquilo: o Claude Code foi instruido a NAO desistir
 > no primeiro erro -- ele diagnostica (`openclaw config validate` + `openclaw doctor`), conserta e continua
-> ate o bot responder de verdade no Telegram. Dica: voce pode rodar `/goal "deixar meu agente OpenClaw
-> respondendo no Telegram"` no Claude Code antes de colar o prompt pra ele manter o foco ate o fim.
+> ate o bot responder de verdade no Telegram.
 
 ---
 
@@ -134,7 +134,10 @@ Quando ele falar **"agente no ar"**, abra o Telegram e mande `/start` pro seu bo
 - **Mandar audio:** o bot transcreve via Whisper (se voce configurou OpenAI) e responde
 - **Receber audio:** peca "responde em audio" se voce configurou ElevenLabs
 
-> Isso e o OpenClaw original puro. Se quiser adicionar subagentes, skills ou memoria vetorial depois, veja a documentacao oficial do OpenClaw em https://docs.openclaw.ai
+- **Delegar pra equipe:** peca pro agente principal acionar um subagente (ex: "manda o Jonathan escrever um roteiro", "pede pra Juliana montar o processo", "Paulo, sobe esse site"). Sao 12 subagentes: Jonathan (copy), Paulo (dev), Juliana (ops/design), Rafael (projetos), o clone do dono (trafego) e 7 SDRs (Davi, Lucas, Felipe, Matheus, Amanda, Carolina, Bianca).
+- **Usar as skills:** "monta uma proposta comercial", "cria uma landing page" (10 templates), "analisa esse perfil do Instagram (BMAD)", "cria um subagente novo".
+
+> Isso e o agente Avalanche completo sobre OpenClaw 2026.6.5. Pra criar mais subagentes ou skills depois, use a skill `criar-subagente` ou veja a doc oficial em https://docs.openclaw.ai
 
 ---
 

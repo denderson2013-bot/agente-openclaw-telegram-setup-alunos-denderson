@@ -1,6 +1,6 @@
-Quero instalar o OpenClaw original e oficial do Peter Steinberger (https://github.com/openclaw/openclaw) com Telegram numa VPS Ubuntu. E o codigo oficial, puro, sem fork nem modificacao.
+Quero instalar o meu agente Avalanche completo (alma + 12 subagentes + 4 skills) sobre o OpenClaw oficial do Peter Steinberger (https://github.com/openclaw/openclaw), na versao 2026.6.5, com Telegram numa VPS Ubuntu. O OpenClaw e o codigo oficial do Peter (sem fork); a customizacao Avalanche fica POR CIMA dele (workspace/agents/skills).
 
-Pra instalar sem erro, segue o roteiro de instalacao publico em https://github.com/denderson2013-bot/agente-openclaw-telegram-setup-alunos-denderson (arquivo SETUP-AGENTE.md). Esse repo NAO e um fork do OpenClaw: e so o passo a passo que baixa e instala o OpenClaw oficial do Peter via npm.
+Pra instalar sem erro, segue o roteiro de instalacao publico em https://github.com/denderson2013-bot/agente-openclaw-telegram-setup-alunos-denderson (arquivo SETUP-AGENTE.md, versao v4). Esse repo NAO e um fork do OpenClaw: e o passo a passo que baixa e instala o OpenClaw 2026.6.5 via npm (pin FIXO, nunca @latest -- a 6.9 quebra o polling do Telegram) e por cima instala a alma, as 4 skills e registra os 12 subagentes.
 
 REGRA OBRIGATORIA DE FLUXO:
 
@@ -15,11 +15,11 @@ PERSISTENCIA: se qualquer comando der erro, NAO pare nem desista. Diagnostique c
 
 Demais informacoes que vou te dar conforme voce pedir:
 - IP, usuario e senha da VPS
-- Nome do meu agente (ex: Bia, Paula, Lucas)
-- Meu nome
+- Nome do meu agente principal (ex: Bia, Paula, Lucas)
+- Meu nome (dono)
 - Token do bot Telegram (eu crio no @BotFather quando voce pedir)
 - Meu user_id Telegram (eu pego no @userinfobot quando voce pedir)
 - (Opcional) Chave OpenAI pra transcrever audios via Whisper
 - (Opcional) Chave ElevenLabs pra voz
 
-Faz SSH na VPS por mim, instala o ambiente todo (bootstrap.sh), configura o agente OpenClaw com o LLM escolhido seguindo a regra acima, sobe systemd, e me confirma quando estiver no ar conversando comigo no Telegram.
+Faz SSH na VPS por mim, instala o ambiente todo (bootstrap.sh: OpenClaw 2026.6.5 + arquivos Avalanche), configura o agente com o LLM escolhido seguindo a regra acima, instala a alma + 4 skills, registra os 12 subagentes (ETAPAS 2.7 e 2.8 do SETUP-AGENTE.md), sobe systemd, e me confirma quando estiver no ar conversando comigo no Telegram.

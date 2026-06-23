@@ -1,19 +1,23 @@
 ========================================
-COMO INSTALAR OpenClaw ORIGINAL PURO + TELEGRAM v3
+COMO INSTALAR O AGENTE AVALANCHE (OpenClaw 2026.6.5) + TELEGRAM v4
 (Suporta GLM 4.5/5 Turbo OU GPT Codex 5.5)
-Validado ao vivo em Ubuntu 25.10 + OpenClaw 2026.6.5
+Validado ao vivo em Ubuntu + OpenClaw 2026.6.5
 ========================================
 
 Repositorio:
 https://github.com/denderson2013-bot/agente-openclaw-telegram-setup-alunos-denderson
 
-Instala o OpenClaw original puro (https://github.com/openclaw/openclaw),
-sem customizacao. Agente generico, com o nome que voce escolher.
+Instala o agente Avalanche completo sobre OpenClaw 2026.6.5
+(https://github.com/openclaw/openclaw): alma + 12 subagentes + 4 skills.
+Versao do OpenClaw FIXA em 2026.6.5 (nunca @latest -- a 6.9 quebra o polling do Telegram).
 
 O que voce tem no final:
-- Agente OpenClaw (ex: Bia-bot) conversando via Telegram
+- Agente principal (ex: Bia-bot) conversando via Telegram
+- 12 subagentes (Jonathan, Paulo, Juliana, Rafael, clone do dono, 7 SDRs)
+- 4 skills (proposta comercial, landing page 10 templates, BMAD Instagram, criar subagente)
 - Backend LLM: GLM (Z.ai) OU GPT Codex 5.5
 - Gateway OpenClaw rodando 24/7 via systemd
+- (Opcional) banco PostgreSQL+pgvector de memoria
 - (Opcional) audio: Whisper entrada / ElevenLabs saida
 
 
@@ -52,8 +56,9 @@ PASSO 2 -- INSTALAR DEPENDENCIAS + OpenClaw (1 COMANDO)
 Linux (root):
    curl -fsSL https://raw.githubusercontent.com/denderson2013-bot/agente-openclaw-telegram-setup-alunos-denderson/main/bootstrap.sh | bash
 
-Instala: Node 22 (via nvm), Python 3, ffmpeg, tmux e o
-OpenClaw CLI ORIGINAL (npm install -g openclaw@latest).
+Instala: Node 22 (via nvm), Python 3, ffmpeg, tmux, o
+OpenClaw CLI 2026.6.5 (npm install -g openclaw@2026.6.5 -- pin FIXO, nunca @latest)
+e baixa os arquivos Avalanche (workspace/agents/skills/database) pra ~/agente-avalanche/.
 
 Tempo: 5-10 min.
 
@@ -88,7 +93,34 @@ que valida na escrita. dmPolicy/groupPolicy sao enums obrigatorios.
 
 Enums: dmPolicy = pairing|allowlist|open|disabled ; groupPolicy = open|disabled|allowlist.
 Com allowlist nos dois + seu user_id em allowFrom voce fala com o bot direto.
-Nome do agente (agent.name) NAO existe na 2026.6.5 -- roda sem nome custom (VERIFICAR via 'openclaw config schema').
+Nome do agente: 'openclaw config set agent.name' NAO existe na 2026.6.5. Usa:
+   openclaw agents set-identity --agent main --name "<NOME>" --emoji "🦞"   (confirmado ao vivo)
+
+
+========================================
+PASSO 3.5 -- INSTALAR ALMA + 4 SKILLS + 12 SUBAGENTES
+========================================
+
+(Detalhe completo no SETUP-AGENTE.md, ETAPAS 2.7 e 2.8.)
+
+   SRC=/root/agente-avalanche
+   # Alma no workspace principal
+   mkdir -p /root/.openclaw/workspace/scripts
+   cp "$SRC"/workspace/*.md         /root/.openclaw/workspace/
+   cp "$SRC"/workspace/scripts/*.sh /root/.openclaw/workspace/scripts/ 2>/dev/null || true
+   # 4 skills (auto-descobertas -- nao entram no openclaw.json)
+   mkdir -p /root/.openclaw/skills && cp -r "$SRC"/skills/* /root/.openclaw/skills/
+   openclaw skills list   # deve mostrar proposta/landing/bmad/subagente (Source openclaw-managed)
+
+   # 12 subagentes: usa 'openclaw agents add' (append nao destrutivo). NAO use config patch
+   # num bloco agents.list -- ele recusa com "Refusing to replace agents.list".
+   # SUBAGENT_MODEL = zai/glm-5-turbo (GLM) ou openai/gpt-5.5 (Codex)
+   openclaw agents add jonathan --non-interactive --workspace /root/.openclaw/workspace-jonathan --model "$SUBAGENT_MODEL"
+   openclaw agents set-identity --agent jonathan --name "Jonathan" --emoji "✍️"
+   cp "$SRC"/agents/jonathan-copy.md /root/.openclaw/workspace-jonathan/SOUL.md
+   # ...repete pra paulo, juliana, rafael, davi, lucas, felipe, matheus, amanda, carolina, bianca
+   # + clone do dono (id = slug do seu nome). Loop pronto no SETUP-AGENTE.md ETAPA 2.8.
+   openclaw config validate && openclaw agents list   # main + 12
 
 
 ========================================
@@ -151,8 +183,9 @@ No Claude Code do seu PC, cola o prompt de prompt-instalador.txt.
 O Claude Code:
 - Pergunta qual LLM (GLM ou GPT) ANTES de pedir credencial
 - Faz SSH na VPS
-- Roda bootstrap.sh (instala OpenClaw original)
-- Cria openclaw.json com o canal Telegram e o nome do agente
+- Roda bootstrap.sh (instala OpenClaw 2026.6.5 + baixa os arquivos Avalanche)
+- Configura o canal Telegram e o nome do agente
+- Instala a alma + 4 skills e registra os 12 subagentes
 - Autentica o LLM escolhido
 - Sobe systemd openclaw-gateway
 - Valida com openclaw doctor
@@ -220,7 +253,7 @@ corrige e continua. So termina quando o bot responder de verdade no Telegram.
 
 
 ========================================
-FIM v3
+FIM v4
 ========================================
 
 Doc oficial: https://docs.openclaw.ai

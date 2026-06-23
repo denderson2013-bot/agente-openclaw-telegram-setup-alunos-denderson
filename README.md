@@ -1,6 +1,8 @@
-# Agente OpenClaw + Telegram -- Setup automatizado (versao publica pra alunos)
+# Agente Avalanche (OpenClaw 2026.6.5) + Telegram -- Setup automatizado (versao publica pra alunos)
 
-Instala o **OpenClaw original puro** (https://github.com/openclaw/openclaw) numa VPS Ubuntu, conectado ao Telegram, rodando 24/7 via systemd. Sem customizacao: um agente generico, com o nome que voce escolher (ex: Bia, Paula, Lucas).
+Instala o **agente Avalanche completo** sobre o **OpenClaw 2026.6.5** (https://github.com/openclaw/openclaw) numa VPS Ubuntu, conectado ao Telegram, rodando 24/7 via systemd. Vem com a alma Avalanche, **12 subagentes** (Jonathan, Paulo, Juliana, Rafael, clone do dono e 7 SDRs) e **4 skills** (proposta comercial, landing page com 10 templates, BMAD Instagram, criar subagente). Voce escolhe o nome do agente principal (ex: Bia, Paula, Lucas) e o seu nome (dono).
+
+> **Versao do OpenClaw fixada em 2026.6.5** (nunca `@latest`): a 2026.6.9 tem regressao de polling do Telegram e a 2026.4.24 e velha demais.
 
 Suporta dois caminhos de LLM no mesmo agente:
 
@@ -11,7 +13,7 @@ Suporta dois caminhos de LLM no mesmo agente:
 
 ## INSTALACAO 5 MIN -- Sem mexer em terminal (caminho recomendado)
 
-> Voce nao precisa saber comando nenhum. O Claude Code (ou outro agente que faca SSH) que voce usa no PC faz SSH na sua VPS automaticamente, instala o OpenClaw puro, configura GLM ou GPT como backend, sobe o agente. Voce so responde perguntas.
+> Voce nao precisa saber comando nenhum. O Claude Code (ou outro agente que faca SSH) que voce usa no PC faz SSH na sua VPS automaticamente, instala o OpenClaw 2026.6.5 + a alma Avalanche + 12 subagentes + 4 skills, configura GLM ou GPT como backend, sobe o agente. Voce so responde perguntas.
 
 **6 passos:**
 
@@ -34,7 +36,9 @@ Suporta dois caminhos de LLM no mesmo agente:
 curl -fsSL https://raw.githubusercontent.com/denderson2013-bot/agente-openclaw-telegram-setup-alunos-denderson/main/bootstrap.sh | bash
 ```
 
-Instala: Node 22 (via nvm), Python 3, ffmpeg, tmux e o **OpenClaw CLI original** (`npm install -g openclaw@latest`). OpenClaw exige Node 22.19+ (24 recomendado).
+Instala: Node 22 (via nvm), Python 3, ffmpeg, tmux, o **OpenClaw CLI 2026.6.5** (`npm install -g openclaw@2026.6.5` -- pin fixo, NUNCA `@latest`) e baixa os arquivos Avalanche (`workspace/`, `agents/`, `skills/`, `database/`) pra `~/agente-avalanche/`. OpenClaw exige Node 22.19+ (24 recomendado).
+
+> Depois do bootstrap, o caminho completo (copiar a alma, instalar as 4 skills e registrar os 12 subagentes via `openclaw agents add`) esta no [`SETUP-AGENTE.md`](./SETUP-AGENTE.md) (ETAPAS 2.7 e 2.8). Os passos manuais abaixo cobrem o nucleo (Telegram + LLM + gateway).
 
 ### 2. Configurar o Telegram via `config patch` (NAO escreva o JSON na mao)
 
@@ -67,7 +71,7 @@ openclaw config validate            # "Config valid"
 > `allowlist` nos dois + seu `user_id` em `allowFrom` libera voce direto, sem pairing.
 >
 > **Nome do agente:** `openclaw config set agent.name` **nao existe** na 2026.6.5 (da `Invalid input`).
-> O agente roda sem nome custom. Pra investigar o caminho real: `openclaw config schema`. (VERIFICAR)
+> Use `openclaw agents set-identity --agent main --name "SeuNome" --emoji "🦞"` (confirmado ao vivo).
 
 ### 3. Escolher o backend de LLM
 
@@ -109,6 +113,8 @@ systemctl enable --now openclaw-gateway
 systemctl status openclaw-gateway
 ```
 
+> Antes de subir o gateway, instale a alma + skills (ETAPA 2.7 do SETUP-AGENTE.md) e registre os 12 subagentes (ETAPA 2.8, via `openclaw agents add`). As skills sao auto-descobertas de `~/.openclaw/skills/<nome>/SKILL.md` (nao entram no `openclaw.json`); os subagentes vivem em `agents.list[]`.
+
 > Se o gateway nao subir: `journalctl -u openclaw-gateway -n 50 --no-pager`, depois `openclaw config validate`
 > e `openclaw doctor`. Causas reais na 2026.6.5: faltou `gateway.mode local`, JSON escrito na mao
 > (`Invalid input`), ou placeholder sobrando no unit. Erro nao e parada -- diagnostica e segue ate o bot
@@ -131,14 +137,18 @@ Pronto. O agente OpenClaw responde.
                   [Backend LLM: GLM (Z.ai) OU GPT Codex 5.5 (openai/OAuth)]
                             |
                             v
-                  [Agente OpenClaw (nome escolhido pelo aluno)]
+       [Agente principal (nome do aluno) + 12 subagentes + 4 skills]
+                            |
+                            v
+        [(opcional) PostgreSQL + pgvector -- memoria persistente]
 ```
 
 Resiliencia:
 - Gateway via systemd `Restart=always`
 - Canal Telegram nativo do OpenClaw (sem bot externo Python)
 - Backup automatico de `openclaw.json.last-good`
-- Cron opcional de healthcheck (`openclaw doctor` a cada 5 min)
+- Cron opcional de healthcheck (`scripts/heartbeat.sh` ou `openclaw doctor`)
+- 12 subagentes registrados em `agents.list[]`; 4 skills auto-descobertas em `~/.openclaw/skills/`
 
 ---
 
